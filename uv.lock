@@ -269,7 +269,7 @@ wheels = [
 ]
 
 [[package]]
-name = "dify-sdk"
+name = "dify-knowledge-sdk"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
