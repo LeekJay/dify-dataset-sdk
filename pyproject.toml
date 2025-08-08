@@ -90,5 +90,3 @@ python_classes = "Test*"
 python_functions = "test_*"
 addopts = "-v --tb=short"
 
-[dependency-groups]
-dev = ["ruff>=0.12.7"]

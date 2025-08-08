@@ -16,14 +16,35 @@ from .exceptions import (
 
 
 class BaseClient:
-    """Base HTTP client for Dify API."""
+    """Base HTTP client for Dify API.
+
+    Provides a foundation for making HTTP requests to the Dify API with
+    proper error handling, timeout management, and authentication.
+
+    Attributes:
+        api_key (str): API key for authentication
+        base_url (str): Base URL for API endpoints
+        timeout (float): Request timeout in seconds
+    """
 
     def __init__(
         self,
         api_key: str,
         base_url: str = "https://api.dify.ai",
         timeout: float = 30.0
-    ):
+    ) -> None:
+        """Initialize the base client.
+
+        Args:
+            api_key: Dify API key for authentication
+            base_url: Base URL for the Dify API (default: https://api.dify.ai)
+            timeout: Request timeout in seconds (default: 30.0)
+
+        Raises:
+            ValueError: If api_key is empty or None
+        """
+        if not api_key or not api_key.strip():
+            raise ValueError("API key cannot be empty")
         self.api_key = api_key
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
@@ -31,8 +52,29 @@ class BaseClient:
             timeout=httpx.Timeout(timeout)
         )
 
+    def _safe_parse_error_response(self, response: httpx.Response) -> Dict[str, Any]:
+        """Safely parse error response JSON.
+
+        Args:
+            response: HTTP response object
+
+        Returns:
+            Parsed JSON data or empty dict if parsing fails
+        """
+        if not response.content:
+            return {}
+
+        try:
+            return response.json()  # type: ignore[no-any-return]
+        except ValueError:
+            return {"message": "Failed to parse error response"}
+
     def _get_headers(self) -> Dict[str, str]:
-        """Get default headers for API requests."""
+        """Get default headers for API requests.
+
+        Returns:
+            Dictionary containing standard headers for Dify API requests
+        """
         return {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -40,30 +82,50 @@ class BaseClient:
         }
 
     def _handle_response(self, response: httpx.Response) -> Any:
-        """Handle HTTP response and raise appropriate exceptions."""
+        """Handle HTTP response and raise appropriate exceptions.
+
+        Args:
+            response: HTTP response object from httpx
+
+        Returns:
+            Parsed JSON response data or success status
+
+        Raises:
+            DifyValidationError: For 400, 403, 413, 415 status codes
+            DifyAuthenticationError: For 401 status code
+            DifyNotFoundError: For 404 status code
+            DifyConflictError: For 409 status code
+            DifyServerError: For 5xx status codes
+            DifyAPIError: For other unexpected status codes
+            DifyConnectionError: For connection-related errors
+        """
         try:
-            if response.status_code == 200:
-                return response.json()
-            elif response.status_code == 201:
-                return response.json()
+            if response.status_code in (200, 201):
+                if response.content:
+                    try:
+                        return response.json()
+                    except ValueError as e:
+                        raise DifyAPIError(f"Invalid JSON response: {str(e)}", response.status_code) from e
+                else:
+                    return {}
             elif response.status_code == 204:
                 return {"status": "success"}
             elif response.status_code == 400:
-                error_data = response.json() if response.content else {}
+                error_data = self._safe_parse_error_response(response)
                 error_code = error_data.get("code", "unknown")
                 message = ERROR_CODE_MAPPING.get(error_code, error_data.get("message", "Bad request"))
                 raise DifyValidationError(message, response.status_code, error_code)
             elif response.status_code == 401:
                 raise DifyAuthenticationError("Invalid API key", response.status_code)
             elif response.status_code == 403:
-                error_data = response.json() if response.content else {}
+                error_data = self._safe_parse_error_response(response)
                 error_code = error_data.get("code", "forbidden")
                 message = ERROR_CODE_MAPPING.get(error_code, "Forbidden")
                 raise DifyValidationError(message, response.status_code, error_code)
             elif response.status_code == 404:
                 raise DifyNotFoundError("Resource not found", response.status_code)
             elif response.status_code == 409:
-                error_data = response.json() if response.content else {}
+                error_data = self._safe_parse_error_response(response)
                 error_code = error_data.get("code", "conflict")
                 message = ERROR_CODE_MAPPING.get(error_code, "Conflict")
                 raise DifyConflictError(message, response.status_code, error_code)
@@ -109,7 +171,7 @@ class BaseClient:
                 kwargs["json"] = json
                 kwargs["headers"] = self._get_headers()
 
-            response = self._client.request(**kwargs)
+            response = self._client.request(**kwargs)  # type: ignore[arg-type]
             return self._handle_response(response)
 
         except httpx.TimeoutException as e:
@@ -141,12 +203,24 @@ class BaseClient:
         """Make DELETE request."""
         return self._request("DELETE", path)
 
-    def close(self):
-        """Close the HTTP client."""
+    def close(self) -> None:
+        """Close the HTTP client connection and cleanup resources."""
         self._client.close()
 
-    def __enter__(self):
+    def __enter__(self) -> 'BaseClient':
+        """Enter context manager.
+
+        Returns:
+            Self for method chaining
+        """
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Exit context manager and cleanup resources.
+
+        Args:
+            exc_type: Exception type
+            exc_val: Exception value
+            exc_tb: Exception traceback
+        """
         self.close()

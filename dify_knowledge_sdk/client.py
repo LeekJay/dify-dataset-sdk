@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 from .base_client import BaseClient
 from .models import (
@@ -19,6 +19,66 @@ from .models import (
 class DifyDatasetClient(BaseClient):
     """Dify Dataset API client for knowledge base management."""
 
+    def _prepare_file_upload_data(
+        self,
+        indexing_technique: str = "high_quality",
+        process_rule_mode: str = "automatic",
+        process_rule_config: Optional[Dict[str, Any]] = None,
+        name: Optional[str] = None
+    ) -> str:
+        """Prepare JSON data payload for file uploads.
+
+        Args:
+            indexing_technique: Indexing technique
+            process_rule_mode: Process rule mode
+            process_rule_config: Custom process rule configuration
+            name: Custom document name
+
+        Returns:
+            JSON string for file upload data
+        """
+        process_rule = {"mode": process_rule_mode}
+        if process_rule_config:
+            process_rule.update(process_rule_config)
+
+        data_payload = {
+            "indexing_technique": indexing_technique,
+            "process_rule": process_rule
+        }
+        if name:
+            data_payload["name"] = name
+
+        return json.dumps(data_payload, separators=(',', ':'))
+
+    def _prepare_file_upload(
+        self,
+        file_path: Union[str, Path],
+        json_data: str
+    ) -> Tuple[Dict[str, Any], Any]:
+        """Prepare file and data for multipart upload.
+
+        Args:
+            file_path: Path to the file
+            json_data: JSON string for upload data
+
+        Returns:
+            Tuple of (files dict, file handle)
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+        """
+        file_path = Path(file_path)
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        file_handle = open(file_path, "rb")
+        files = {
+            "file": (file_path.name, file_handle, "application/octet-stream"),
+            "data": ('', json_data, "text/plain")
+        }
+
+        return files, file_handle
+
     def __init__(self, api_key: str, base_url: str = "https://api.dify.ai", timeout: float = 30.0):
         """
         Initialize the Dify Dataset client.
@@ -31,7 +91,7 @@ class DifyDatasetClient(BaseClient):
         super().__init__(api_key, base_url, timeout)
 
     # Dataset management methods
-    def create_dataset(self, name: str, permission: str = "only_me", description: Optional[str] = None) -> Dataset:
+    def create_dataset(self, name: str, permission: Literal["only_me", "all_team_members"] = "only_me", description: Optional[str] = None) -> Dataset:
         """
         Create an empty dataset.
 
@@ -49,20 +109,36 @@ class DifyDatasetClient(BaseClient):
 
     def list_datasets(self, page: int = 1, limit: int = 20) -> PaginatedResponse:
         """
-        Get list of datasets.
+        Get paginated list of datasets.
 
         Args:
-            page: Page number (default: 1)
-            limit: Items per page (default: 20)
+            page: Page number, starting from 1 (default: 1)
+            limit: Items per page, max 100 (default: 20)
 
         Returns:
-            Paginated list of datasets
+            Paginated response containing dataset list and metadata
+
+        Raises:
+            DifyAPIError: For API errors
+            ValueError: If page or limit values are invalid
+
+        Example:
+            ```python
+            datasets = client.list_datasets(page=1, limit=10)
+            for dataset_data in datasets.data:
+                print(f"Dataset: {dataset_data['name']}")
+            ```
         """
+        if page < 1:
+            raise ValueError("Page must be >= 1")
+        if limit < 1 or limit > 100:
+            raise ValueError("Limit must be between 1 and 100")
+
         params = {"page": page, "limit": limit}
         response = self.get("/v1/datasets", params=params)
         return PaginatedResponse(**response)
 
-    def delete_dataset(self, dataset_id: str) -> Dict[str, str]:
+    def delete_dataset(self, dataset_id: str) -> Any:
         """
         Delete a dataset.
 
@@ -135,28 +211,17 @@ class DifyDatasetClient(BaseClient):
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
 
-        process_rule = {"mode": process_rule_mode}
-        if process_rule_config:
-            process_rule.update(process_rule_config)
+        json_data = self._prepare_file_upload_data(
+            indexing_technique, process_rule_mode, process_rule_config, name
+        )
 
-        # Create JSON data payload exactly as shown in official docs
-        data_payload = {
-            "indexing_technique": indexing_technique,
-            "process_rule": process_rule
-        }
-        if name:
-            data_payload["name"] = name
+        files, file_handle = self._prepare_file_upload(file_path, json_data)
 
-        json_string = json.dumps(data_payload, separators=(',', ':'))  # Compact JSON like curl
-
-        with open(file_path, "rb") as file:
-            files = {
-                "file": (file_path.name, file, "application/octet-stream"),
-                "data": ('', json_string, "text/plain")
-            }
-
+        try:
             response = self.post(f"/v1/datasets/{dataset_id}/document/create_by_file", files=files)
             return DocumentResponse(**response)
+        finally:
+            file_handle.close()
 
     def list_documents(self, dataset_id: str, page: int = 1, limit: int = 20) -> PaginatedResponse:
         """
@@ -220,28 +285,17 @@ class DifyDatasetClient(BaseClient):
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
 
-        process_rule = {"mode": process_rule_mode}
-        if process_rule_config:
-            process_rule.update(process_rule_config)
+        json_data = self._prepare_file_upload_data(
+            indexing_technique, process_rule_mode, process_rule_config, name
+        )
 
-        # Create JSON data payload exactly as shown in official docs
-        data_payload = {
-            "indexing_technique": indexing_technique,
-            "process_rule": process_rule
-        }
-        if name:
-            data_payload["name"] = name
+        files, file_handle = self._prepare_file_upload(file_path, json_data)
 
-        json_string = json.dumps(data_payload, separators=(',', ':'))  # Compact JSON like curl
-
-        with open(file_path, "rb") as file:
-            files = {
-                "file": (file_path.name, file, "application/octet-stream"),
-                "data": ('', json_string, "text/plain")  # Use empty string instead of None
-            }
-
+        try:
             response = self.post(f"/v1/datasets/{dataset_id}/documents/{document_id}/update_by_file", files=files)
             return DocumentResponse(**response)
+        finally:
+            file_handle.close()
 
     def delete_document(self, dataset_id: str, document_id: str) -> SuccessResponse:
         """
@@ -367,7 +421,7 @@ class DifyDatasetClient(BaseClient):
         response = self.patch(f"/v1/datasets/{dataset_id}/metadata/{metadata_id}", json=request_data)
         return Metadata(**response)
 
-    def delete_metadata_field(self, dataset_id: str, metadata_id: str) -> Dict[str, str]:
+    def delete_metadata_field(self, dataset_id: str, metadata_id: str) -> Any:
         """
         Delete a metadata field.
 
@@ -381,7 +435,7 @@ class DifyDatasetClient(BaseClient):
         response = self.delete(f"/v1/datasets/{dataset_id}/metadata/{metadata_id}")
         return response
 
-    def toggle_built_in_metadata_field(self, dataset_id: str, action: str) -> Dict[str, str]:
+    def toggle_built_in_metadata_field(self, dataset_id: str, action: str) -> Any:
         """
         Enable or disable built-in metadata fields.
 
@@ -395,7 +449,7 @@ class DifyDatasetClient(BaseClient):
         response = self.delete(f"/v1/datasets/{dataset_id}/metadata/built-in/{action}")
         return response
 
-    def update_document_metadata(self, dataset_id: str, operation_data: List[Dict[str, Any]]) -> Dict[str, str]:
+    def update_document_metadata(self, dataset_id: str, operation_data: List[Dict[str, Any]]) -> Any:
         """
         Update document metadata values.
 

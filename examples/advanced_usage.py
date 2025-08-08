@@ -5,10 +5,11 @@ This example shows more complex scenarios including file uploads,
 custom processing rules, error handling, and batch operations.
 """
 
+import time
 from pathlib import Path
 
-from src import DifyDatasetClient
-from src.exceptions import DifyAPIError
+from dify_knowledge_sdk import DifyDatasetClient
+from dify_knowledge_sdk.exceptions import DifyAPIError
 
 
 class AdvancedDifyManager:
@@ -56,7 +57,6 @@ class AdvancedDifyManager:
 
     def monitor_indexing_progress(self, dataset_id: str, batch_id: str, max_attempts: int = 30):
         """Monitor document indexing progress with polling."""
-        import time
 
         print("📊 Monitoring indexing progress...")
         for _attempt in range(max_attempts):
@@ -152,14 +152,13 @@ class AdvancedDifyManager:
 
 def main():
     """Demonstrate advanced usage scenarios."""
-    api_key = "dataset-V4Xxq792Je6ndZ8hakvYFmvP"
-    base_url = "http://43.139.117.108"  # Optional: customize base URL
+    api_key = "YOUR_API_KEY_HERE"  # Replace with your actual API key
+    base_url = "https://api.dify.ai"  # Default Dify API URL
     manager = AdvancedDifyManager(api_key=api_key, base_url=base_url)
 
     try:
         # Scenario 1: Create dataset with comprehensive setup
         print("🚀 Scenario 1: Creating dataset with metadata schema")
-        import time
         timestamp = int(time.time())
         dataset = manager.create_dataset_with_custom_rules(name=f"Advanced Test Dataset {timestamp}", description="Dataset created with advanced SDK features")
 

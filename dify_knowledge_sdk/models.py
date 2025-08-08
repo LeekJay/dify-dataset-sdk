@@ -1,53 +1,77 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DataSourceInfo(BaseModel):
-    upload_file_id: Optional[str] = None
+    """Information about the data source for a document."""
+
+    model_config = ConfigDict(extra='ignore')
+
+    upload_file_id: Optional[str] = Field(None, description="ID of uploaded file")
 
 
 class ProcessRule(BaseModel):
-    mode: str
-    rules: Optional[Dict[str, Any]] = None
+    """Processing rules for document indexing."""
+
+    model_config = ConfigDict(extra='ignore')
+
+    mode: Literal["automatic", "custom"] = Field(description="Processing mode")
+    rules: Optional[Dict[str, Any]] = Field(None, description="Custom processing rules")
 
 
 class PreProcessingRule(BaseModel):
-    id: str
-    enabled: bool
+    """Preprocessing rule configuration."""
+
+    model_config = ConfigDict(extra='ignore')
+
+    id: str = Field(description="Rule ID")
+    enabled: bool = Field(description="Whether the rule is enabled")
 
 
 class Segmentation(BaseModel):
-    separator: str
-    max_tokens: int
+    """Text segmentation configuration."""
+
+    model_config = ConfigDict(extra='ignore')
+
+    separator: str = Field(description="Segment separator")
+    max_tokens: int = Field(description="Maximum tokens per segment", gt=0, le=4096)
 
 
 class ProcessRuleConfig(BaseModel):
-    pre_processing_rules: List[PreProcessingRule]
-    segmentation: Segmentation
+    """Process rule configuration."""
+
+    model_config = ConfigDict(extra='ignore')
+
+    pre_processing_rules: List[PreProcessingRule] = Field(description="Preprocessing rules")
+    segmentation: Segmentation = Field(description="Segmentation configuration")
 
 
 class Document(BaseModel):
-    id: str
-    position: int
-    data_source_type: str
-    data_source_info: Optional[DataSourceInfo] = None
-    dataset_process_rule_id: Optional[str] = None
-    name: str
-    created_from: str
-    created_by: str
-    created_at: int
-    tokens: int
-    indexing_status: str
-    error: Optional[str] = None
-    enabled: bool
-    disabled_at: Optional[int] = None
-    disabled_by: Optional[str] = None
-    archived: bool
-    display_status: Optional[str] = None
-    word_count: int
-    hit_count: int
-    doc_form: str
+    """Document information in a dataset."""
+
+    model_config = ConfigDict(extra='ignore')
+
+    id: str = Field(description="Document ID")
+    position: int = Field(description="Document position", ge=0)
+    data_source_type: str = Field(description="Data source type")
+    data_source_info: Optional[DataSourceInfo] = Field(None, description="Data source info")
+    dataset_process_rule_id: Optional[str] = Field(None, description="Process rule ID")
+    name: str = Field(description="Document name", min_length=1)
+    created_from: str = Field(description="Creation source")
+    created_by: str = Field(description="Creator ID")
+    created_at: int = Field(description="Creation timestamp", ge=0)
+    tokens: int = Field(description="Token count", ge=0)
+    indexing_status: str = Field(description="Indexing status")
+    error: Optional[str] = Field(None, description="Error message")
+    enabled: bool = Field(description="Whether document is enabled")
+    disabled_at: Optional[int] = Field(None, description="Disabled timestamp")
+    disabled_by: Optional[str] = Field(None, description="User who disabled")
+    archived: bool = Field(description="Whether document is archived")
+    display_status: Optional[str] = Field(None, description="Display status")
+    word_count: int = Field(description="Word count", ge=0)
+    hit_count: int = Field(description="Hit count", ge=0)
+    doc_form: str = Field(description="Document form")
 
 
 class Dataset(BaseModel):
@@ -128,11 +152,15 @@ class DocumentMetadata(BaseModel):
 
 
 class PaginatedResponse(BaseModel):
-    data: List[Any]
-    has_more: bool
-    limit: int
-    total: int
-    page: int
+    """Generic paginated response model."""
+
+    model_config = ConfigDict(extra='ignore')
+
+    data: List[Any] = Field(description="Response data items")
+    has_more: bool = Field(description="Whether more pages are available")
+    limit: int = Field(description="Items per page limit", gt=0, le=100)
+    total: int = Field(description="Total number of items", ge=0)
+    page: int = Field(description="Current page number", gt=0)
 
 
 class CreateDocumentByTextRequest(BaseModel):
@@ -148,9 +176,13 @@ class CreateDocumentByFileRequest(BaseModel):
 
 
 class CreateDatasetRequest(BaseModel):
-    name: str
-    permission: str = "only_me"
-    description: Optional[str] = None
+    """Request model for creating a new dataset."""
+
+    model_config = ConfigDict(extra='ignore')
+
+    name: str = Field(description="Dataset name", min_length=1, max_length=100)
+    permission: Literal["only_me", "all_team_members"] = Field("only_me", description="Dataset permission level")
+    description: Optional[str] = Field(None, description="Dataset description", max_length=500)
 
 
 class UpdateDocumentByTextRequest(BaseModel):
@@ -199,4 +231,8 @@ class IndexingStatusResponse(BaseModel):
 
 
 class SuccessResponse(BaseModel):
-    result: str = "success"
+    """Standard success response model."""
+
+    model_config = ConfigDict(extra='ignore')
+
+    result: Literal["success"] = Field("success", description="Operation result status")

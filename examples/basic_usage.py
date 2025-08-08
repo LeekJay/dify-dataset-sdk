@@ -5,22 +5,23 @@ This example demonstrates how to use the Dify SDK to manage knowledge bases (dat
 documents, segments, and metadata through the API.
 """
 
-from src import DifyDatasetClient
-from src.exceptions import DifyAPIError, DifyAuthenticationError
+import time
+
+from dify_knowledge_sdk import DifyDatasetClient
+from dify_knowledge_sdk.exceptions import DifyAPIError, DifyAuthenticationError
 
 
 def main():
     # Initialize the client with your API key
     # You can get your API key from the Dify knowledge base API page
-    api_key = "dataset-V4Xxq792Je6ndZ8hakvYFmvP"
-    base_url = "http://43.139.117.108"  # Optional: customize base URL
+    api_key = "YOUR_API_KEY_HERE"  # Replace with your actual API key
+    base_url = "https://api.dify.ai"  # Default Dify API URL
 
     client = DifyDatasetClient(api_key=api_key, base_url=base_url)
 
     try:
         # Example 1: Create a new dataset (knowledge base)
         print("Creating a new dataset...")
-        import time
         timestamp = int(time.time())
         dataset = client.create_dataset(
             name=f"Test Dataset {timestamp}",
@@ -51,7 +52,6 @@ def main():
 
         # Example 4: Wait for indexing to complete
         print("\nWaiting for document indexing to complete...")
-        import time
         max_attempts = 30
         for attempt in range(max_attempts):
             status = client.get_document_indexing_status(dataset_id, batch_id)
