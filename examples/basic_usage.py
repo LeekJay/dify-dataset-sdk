@@ -1,7 +1,7 @@
 """
 Dify Knowledge Base SDK Example
 
-This example demonstrates how to use the Dify SDK to manage knowledge bases (datasets),
+This example demonstrates how to use the Dify Knowledge SDK to manage knowledge bases (datasets),
 documents, segments, and metadata through the API.
 """
 
@@ -43,7 +43,7 @@ def main():
         doc_response = client.create_document_by_text(
             dataset_id=dataset_id,
             name="Sample Text Document",
-            text="This is a sample document created using the Dify SDK. It contains some text that will be indexed and made searchable.",
+            text="This is a sample document created using the Dify Knowledge SDK. It contains some text that will be indexed and made searchable.",
             indexing_technique="high_quality"
         )
         print(f"Created document: {doc_response.document.name} (ID: {doc_response.document.id})")

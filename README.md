@@ -18,13 +18,13 @@ A comprehensive Python SDK for interacting with Dify's Knowledge Base API. This 
 ## Installation
 
 ```bash
-pip install dify-sdk
+pip install dify-knowledge-sdk
 ```
 
 ## Quick Start
 
 ```python
-from dify_sdk import DifyDatasetClient
+from dify_knowledge_sdk import DifyDatasetClient
 
 # Initialize the client
 client = DifyDatasetClient(api_key="your-api-key-here")
@@ -236,7 +236,7 @@ if status.data:
 The SDK provides comprehensive error handling with specific exception types:
 
 ```python
-from dify_sdk.exceptions import (
+from dify_knowledge_sdk.exceptions import (
     DifyAPIError,
     DifyAuthenticationError,
     DifyValidationError,
@@ -302,8 +302,8 @@ Please respect Dify's API rate limits. The SDK includes automatic error handling
 
 ```bash
 # Clone the repository
-git clone https://github.com/dify/dify-sdk-python.git
-cd dify-sdk-python
+git clone https://github.com/LeekJay/dify-knowledge-sdk.git
+cd dify-knowledge-sdk
 
 # Install dependencies
 pip install -e ".[dev]"
@@ -318,8 +318,8 @@ pytest
 ### Code Formatting
 
 ```bash
-black dify_sdk/
-isort dify_sdk/
+ruff format dify_knowledge_sdk/
+ruff check --fix dify_knowledge_sdk/
 ```
 
 ## Contributing
@@ -333,12 +333,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 - 📖 [Dify Documentation](https://docs.dify.ai/)
-- 🐛 [Issue Tracker](https://github.com/dify/dify-sdk-python/issues)
+- 🐛 [Issue Tracker](https://github.com/LeekJay/dify-knowledge-sdk/issues)
 - 💬 [Community Discussions](https://github.com/dify/dify/discussions)
 
 ## Changelog
 
-### v0.1.0
+### v0.2.0
 
 - Initial release
 - Full Dify Knowledge Base API support

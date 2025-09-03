@@ -1,5 +1,5 @@
 """
-Advanced usage examples for the Dify SDK.
+Advanced usage examples for the Dify Knowledge SDK.
 
 This example shows more complex scenarios including file uploads,
 custom processing rules, error handling, and batch operations.

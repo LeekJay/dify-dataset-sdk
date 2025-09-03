@@ -18,13 +18,13 @@
 ## 安装
 
 ```bash
-pip install dify-sdk
+pip install dify-knowledge-sdk
 ```
 
 ## 快速开始
 
 ```python
-from dify_sdk import DifyDatasetClient
+from dify_knowledge_sdk import DifyDatasetClient
 
 # 初始化客户端
 client = DifyDatasetClient(api_key="your-api-key-here")
@@ -236,7 +236,7 @@ if status.data:
 SDK 提供了具有特定异常类型的全面错误处理：
 
 ```python
-from dify_sdk.exceptions import (
+from dify_knowledge_sdk.exceptions import (
     DifyAPIError,
     DifyAuthenticationError,
     DifyValidationError,
@@ -302,8 +302,8 @@ SDK 支持上传以下文件类型：
 
 ```bash
 # 克隆仓库
-git clone https://github.com/dify/dify-sdk-python.git
-cd dify-sdk-python
+git clone https://github.com/LeekJay/dify-knowledge-sdk.git
+cd dify-knowledge-sdk
 
 # 安装依赖
 pip install -e ".[dev]"
@@ -318,8 +318,8 @@ pytest
 ### 代码格式化
 
 ```bash
-black dify_sdk/
-isort dify_sdk/
+ruff format dify_knowledge_sdk/
+ruff check --fix dify_knowledge_sdk/
 ```
 
 ## 贡献
@@ -333,12 +333,12 @@ isort dify_sdk/
 ## 支持
 
 - 📖 [Dify 文档](https://docs.dify.ai/)
-- 🐛 [问题跟踪器](https://github.com/dify/dify-sdk-python/issues)
+- 🐛 [问题跟踪器](https://github.com/LeekJay/dify-knowledge-sdk/issues)
 - 💬 [社区讨论](https://github.com/dify/dify/discussions)
 
 ## 更新日志
 
-### v0.1.0
+### v0.2.0
 
 - 初始发布
 - 完整的 Dify 知识库 API 支持
