@@ -8,8 +8,8 @@ custom processing rules, error handling, and batch operations.
 import time
 from pathlib import Path
 
-from dify_knowledge_sdk import DifyDatasetClient
-from dify_knowledge_sdk.exceptions import DifyAPIError
+from dify_dataset_sdk import DifyDatasetClient
+from dify_dataset_sdk.exceptions import DifyAPIError
 
 
 class AdvancedDifyManager:
@@ -21,20 +21,34 @@ class AdvancedDifyManager:
     def create_dataset_with_custom_rules(self, name: str, description: str = None):
         """Create a dataset with custom processing rules."""
         try:
-            dataset = self.client.create_dataset(name=name, description=description, permission="only_me")
+            dataset = self.client.create_dataset(
+                name=name, description=description, permission="only_me"
+            )
             print(f"✅ Created dataset: {dataset.name}")
             return dataset
         except DifyAPIError as e:
             print(f"❌ Failed to create dataset: {e}")
             return None
 
-    def upload_document_with_custom_processing(self, dataset_id: str, file_path: str, custom_separator: str = "###", max_tokens: int = 500):
+    def upload_document_with_custom_processing(
+        self,
+        dataset_id: str,
+        file_path: str,
+        custom_separator: str = "###",
+        max_tokens: int = 500,
+    ):
         """Upload a document with custom processing rules."""
         # Custom processing rules
         process_rule_config = {
             "rules": {
-                "pre_processing_rules": [{"id": "remove_extra_spaces", "enabled": True}, {"id": "remove_urls_emails", "enabled": True}],
-                "segmentation": {"separator": custom_separator, "max_tokens": max_tokens},
+                "pre_processing_rules": [
+                    {"id": "remove_extra_spaces", "enabled": True},
+                    {"id": "remove_urls_emails", "enabled": True},
+                ],
+                "segmentation": {
+                    "separator": custom_separator,
+                    "max_tokens": max_tokens,
+                },
             }
         }
 
@@ -43,8 +57,7 @@ class AdvancedDifyManager:
                 dataset_id=dataset_id,
                 file_path=file_path,
                 indexing_technique="high_quality",
-                process_rule_mode="custom",
-                process_rule_config=process_rule_config,
+                process_rule={"mode": "custom", "rules": process_rule_config["rules"]},
             )
             print(f"✅ Uploaded document: {doc_response.document.name}")
             return doc_response
@@ -55,7 +68,9 @@ class AdvancedDifyManager:
             print(f"❌ Failed to upload document: {e}")
             return None
 
-    def monitor_indexing_progress(self, dataset_id: str, batch_id: str, max_attempts: int = 30):
+    def monitor_indexing_progress(
+        self, dataset_id: str, batch_id: str, max_attempts: int = 30
+    ):
         """Monitor document indexing progress with polling."""
 
         print("📊 Monitoring indexing progress...")
@@ -81,14 +96,24 @@ class AdvancedDifyManager:
         print("⏰ Indexing monitoring timed out")
         return False
 
-    def batch_create_segments(self, dataset_id: str, document_id: str, text_chunks: list):
+    def batch_create_segments(
+        self, dataset_id: str, document_id: str, text_chunks: list
+    ):
         """Create multiple segments from text chunks."""
         segments_data = []
         for i, chunk in enumerate(text_chunks):
-            segments_data.append({"content": chunk, "answer": f"Answer for chunk {i + 1}", "keywords": [f"keyword{i + 1}", "batch"]})
+            segments_data.append(
+                {
+                    "content": chunk,
+                    "answer": f"Answer for chunk {i + 1}",
+                    "keywords": [f"keyword{i + 1}", "batch"],
+                }
+            )
 
         try:
-            response = self.client.create_segments(dataset_id, document_id, segments_data)
+            response = self.client.create_segments(
+                dataset_id, document_id, segments_data
+            )
             print(f"✅ Created {len(response.data)} segments in batch")
             return response
         except DifyAPIError as e:
@@ -107,7 +132,9 @@ class AdvancedDifyManager:
         created_fields = []
         for field in metadata_fields:
             try:
-                created_field = self.client.create_metadata_field(dataset_id=dataset_id, field_type=field["type"], name=field["name"])
+                created_field = self.client.create_metadata_field(
+                    dataset_id=dataset_id, field_type=field["type"], name=field["name"]
+                )
                 created_fields.append(created_field)
                 print(f"✅ Created metadata field: {created_field.name}")
             except DifyAPIError as e:
@@ -160,7 +187,10 @@ def main():
         # Scenario 1: Create dataset with comprehensive setup
         print("🚀 Scenario 1: Creating dataset with metadata schema")
         timestamp = int(time.time())
-        dataset = manager.create_dataset_with_custom_rules(name=f"Advanced Test Dataset {timestamp}", description="Dataset created with advanced SDK features")
+        dataset = manager.create_dataset_with_custom_rules(
+            name=f"Advanced Test Dataset {timestamp}",
+            description="Dataset created with advanced SDK features",
+        )
 
         if not dataset:
             return
@@ -195,7 +225,10 @@ def main():
         sample_file.write_text(sample_content.strip())
 
         doc_response = manager.upload_document_with_custom_processing(
-            dataset_id=dataset_id, file_path=str(sample_file), custom_separator="###", max_tokens=300
+            dataset_id=dataset_id,
+            file_path=str(sample_file),
+            custom_separator="###",
+            max_tokens=300,
         )
 
         # Clean up sample file

@@ -9,22 +9,27 @@
 - 📄 **文档管理**：从文本或文件创建、更新、删除文档
 - 🗂️ **数据集操作**：知识库的完整 CRUD 操作
 - ✂️ **片段控制**：精细控制文档片段（块）的管理
-- 🏷️ **元数据支持**：创建和管理自定义元数据字段
+- 🏷️ **知识标签**：创建和管理知识标签，实现数据集组织
+- 📊 **元数据支持**：创建和管理自定义元数据字段
+- 🔍 **高级检索**：多种搜索方法（语义、全文、混合搜索）
+- 🔗 **批量操作**：文档和元数据的高效批量处理
 - 🌐 **HTTP 客户端**：基于 httpx 构建，提供可靠快速的 HTTP 通信
 - ⚠️ **错误处理**：使用自定义异常进行全面的错误处理
-- 📊 **进度监控**：跟踪文档索引进度
+- 📈 **进度监控**：详细状态跟踪文档索引进度
+- 🛡️ **重试机制**：内置重试逻辑提供网络弹性
 - 🔒 **类型安全**：使用 Pydantic 模型提供完整类型提示
+- 📱 **丰富示例**：覆盖所有用例的综合示例集合
 
 ## 安装
 
 ```bash
-pip install dify-knowledge-sdk
+pip install dify-dataset-sdk
 ```
 
 ## 快速开始
 
 ```python
-from dify_knowledge_sdk import DifyDatasetClient
+from dify_dataset_sdk import DifyDatasetClient
 
 # 初始化客户端
 client = DifyDatasetClient(api_key="your-api-key-here")
@@ -181,6 +186,26 @@ client.update_segment(
 client.delete_segment(dataset_id, document_id, segment_id)
 ```
 
+### 知识标签管理
+
+```python
+# 创建知识标签
+tag = client.create_knowledge_tag(name="技术文档")
+dept_tag = client.create_knowledge_tag(name="工程部门")
+
+# 将数据集绑定到标签
+client.bind_dataset_to_tag(dataset_id, [tag.id, dept_tag.id])
+
+# 列出所有知识标签
+tags = client.list_knowledge_tags()
+
+# 获取特定数据集的标签
+dataset_tags = client.get_dataset_tags(dataset_id)
+
+# 按标签过滤数据集
+filtered_datasets = client.list_datasets(tag_ids=[tag.id])
+```
+
 ### 元数据管理
 
 ```python
@@ -219,6 +244,42 @@ metadata_operations = [
 client.update_document_metadata(dataset_id, metadata_operations)
 ```
 
+### 高级检索
+
+```python
+# 语义搜索
+results = client.retrieve(
+    dataset_id=dataset_id,
+    query="如何实现身份验证？",
+    retrieval_config={
+        "search_method": "semantic_search",
+        "top_k": 5,
+        "score_threshold": 0.7
+    }
+)
+
+# 混合搜索（结合语义和全文搜索）
+results = client.retrieve(
+    dataset_id=dataset_id,
+    query="API 文档",
+    retrieval_config={
+        "search_method": "hybrid_search",
+        "top_k": 10,
+        "rerank_model": {
+            "model": "rerank-multilingual-v2.0",
+            "mode": "reranking_model"
+        }
+    }
+)
+
+# 全文搜索
+results = client.retrieve(
+    dataset_id=dataset_id,
+    query="数据库配置",
+    retrieval_config={"search_method": "full_text_search", "top_k": 5}
+)
+```
+
 ### 进度监控
 
 ```python
@@ -236,7 +297,7 @@ if status.data:
 SDK 提供了具有特定异常类型的全面错误处理：
 
 ```python
-from dify_knowledge_sdk.exceptions import (
+from dify_dataset_sdk.exceptions import (
     DifyAPIError,
     DifyAuthenticationError,
     DifyValidationError,
@@ -266,7 +327,73 @@ except DifyAPIError as e:
 对于更高级的场景，请查看 [examples](./examples/) 目录：
 
 - [基础用法](./examples/basic_usage.py) - 简单操作和入门
-- [高级用法](./examples/advanced_usage.py) - 复杂工作流、批量操作和监控
+- [高级用法](./examples/advanced_usage.py) - 复杂工作流和自定义处理
+- [知识标签管理](./examples/knowledge_tag_management.py) - 基于标签的数据集组织
+- [批量文档处理](./examples/batch_document_processing.py) - 并行处理和批量操作
+- [高级检索分析](./examples/advanced_retrieval_analysis.py) - 检索方法对比和分析
+- [错误处理和监控](./examples/error_handling_and_monitoring.py) - 生产级错误处理和监控
+
+### 主要高级功能
+
+#### 批量处理
+
+使用并行操作高效处理多个文档：
+
+```python
+from concurrent.futures import ThreadPoolExecutor
+
+def upload_document(file_path):
+    return client.create_document_by_file(
+        dataset_id=dataset_id,
+        file_path=file_path,
+        indexing_technique="high_quality"
+    )
+
+# 并行文档上传
+with ThreadPoolExecutor(max_workers=3) as executor:
+    futures = [executor.submit(upload_document, file) for file in file_list]
+    results = [future.result() for future in futures]
+```
+
+#### 带重试的错误处理
+
+实现具有自动重试的健壮错误处理：
+
+```python
+from dify_dataset_sdk.exceptions import DifyTimeoutError, DifyConnectionError
+import time
+
+def safe_operation_with_retry(operation, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            return operation()
+        except (DifyTimeoutError, DifyConnectionError) as e:
+            if attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # 指数退避
+                time.sleep(wait_time)
+                continue
+            raise e
+```
+
+#### 健康监控
+
+监控 SDK 性能和 API 健康状态：
+
+```python
+class SDKMonitor:
+    def __init__(self, client):
+        self.client = client
+        self.metrics = {"requests": 0, "errors": 0, "avg_response_time": 0}
+
+    def health_check(self):
+        try:
+            start_time = time.time()
+            self.client.list_datasets(limit=1)
+            response_time = time.time() - start_time
+            return {"status": "healthy", "response_time": response_time}
+        except Exception as e:
+            return {"status": "unhealthy", "error": str(e)}
+```
 
 ## API 参考
 
@@ -302,8 +429,8 @@ SDK 支持上传以下文件类型：
 
 ```bash
 # 克隆仓库
-git clone https://github.com/LeekJay/dify-knowledge-sdk.git
-cd dify-knowledge-sdk
+git clone https://github.com/LeekJay/dify-dataset-sdk.git
+cd dify-dataset-sdk
 
 # 安装依赖
 pip install -e ".[dev]"
@@ -312,14 +439,27 @@ pip install -e ".[dev]"
 ### 运行测试
 
 ```bash
+# 运行所有测试
 pytest
+
+# 运行特定测试文件
+python tests/test_all_39_apis.py
+
+# 运行详细输出
+pytest -v
 ```
 
 ### 代码格式化
 
 ```bash
-ruff format dify_knowledge_sdk/
-ruff check --fix dify_knowledge_sdk/
+# 格式化代码
+ruff format dify_dataset_sdk/
+
+# 检查并修复问题
+ruff check --fix dify_dataset_sdk/
+
+# 类型检查
+mypy dify_dataset_sdk/
 ```
 
 ## 贡献
@@ -333,18 +473,25 @@ ruff check --fix dify_knowledge_sdk/
 ## 支持
 
 - 📖 [Dify 文档](https://docs.dify.ai/)
-- 🐛 [问题跟踪器](https://github.com/LeekJay/dify-knowledge-sdk/issues)
+- 🐛 [问题跟踪器](https://github.com/LeekJay/dify-dataset-sdk/issues)
 - 💬 [社区讨论](https://github.com/dify/dify/discussions)
+- 📋 [示例文档](./examples/README.md)
 
 ## 更新日志
 
-### v0.2.0
+### v0.3.0
 
-- 初始发布
-- 完整的 Dify 知识库 API 支持
-- 数据集、文档、片段和元数据的完整 CRUD 操作
-- 全面的错误处理
-- 使用 Pydantic 的类型安全模型
-- 文件上传支持
-- 进度监控
-- 示例和文档
+- **初始发布功能**：
+  - 完整的 Dify 知识库 API 支持（39 个端点）
+  - 数据集、文档、片段和元数据的完整 CRUD 操作
+  - 用于数据集组织的知识标签管理
+  - 高级检索方法（语义、全文、混合搜索）
+  - 使用自定义异常的全面错误处理
+  - 使用 Pydantic 的类型安全模型
+  - 多种格式的文件上传支持
+  - 进度监控和索引状态跟踪
+  - 批量处理功能
+  - 重试机制和连接弹性
+  - 涵盖所有用例的丰富示例集合
+  - 生产级监控和健康检查
+  - 多语言文档（英文和中文）

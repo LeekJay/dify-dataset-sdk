@@ -7,8 +7,8 @@ documents, segments, and metadata through the API.
 
 import time
 
-from dify_knowledge_sdk import DifyDatasetClient
-from dify_knowledge_sdk.exceptions import DifyAPIError, DifyAuthenticationError
+from dify_dataset_sdk import DifyDatasetClient
+from dify_dataset_sdk.exceptions import DifyAPIError, DifyAuthenticationError
 
 
 def main():
@@ -26,7 +26,7 @@ def main():
         dataset = client.create_dataset(
             name=f"Test Dataset {timestamp}",
             permission="only_me",
-            description="A test dataset created with the SDK"
+            description="A test dataset created with the SDK",
         )
         print(f"Created dataset: {dataset.name} (ID: {dataset.id})")
         dataset_id = dataset.id
@@ -44,9 +44,11 @@ def main():
             dataset_id=dataset_id,
             name="Sample Text Document",
             text="This is a sample document created using the Dify Knowledge SDK. It contains some text that will be indexed and made searchable.",
-            indexing_technique="high_quality"
+            indexing_technique="high_quality",
         )
-        print(f"Created document: {doc_response.document.name} (ID: {doc_response.document.id})")
+        print(
+            f"Created document: {doc_response.document.name} (ID: {doc_response.document.id})"
+        )
         document_id = doc_response.document.id
         batch_id = doc_response.batch
 
@@ -57,12 +59,18 @@ def main():
             status = client.get_document_indexing_status(dataset_id, batch_id)
             if status.data:
                 indexing_info = status.data[0]
-                print(f"Indexing status: {indexing_info.indexing_status} (Attempt {attempt + 1}/{max_attempts})")
+                print(
+                    f"Indexing status: {indexing_info.indexing_status} (Attempt {attempt + 1}/{max_attempts})"
+                )
                 if indexing_info.indexing_status == "completed":
-                    print(f"✅ Indexing completed! Progress: {indexing_info.completed_segments}/{indexing_info.total_segments} segments")
+                    print(
+                        f"✅ Indexing completed! Progress: {indexing_info.completed_segments}/{indexing_info.total_segments} segments"
+                    )
                     break
                 elif indexing_info.indexing_status in ["error", "paused"]:
-                    print(f"❌ Indexing failed with status: {indexing_info.indexing_status}")
+                    print(
+                        f"❌ Indexing failed with status: {indexing_info.indexing_status}"
+                    )
                     if indexing_info.error:
                         print(f"Error: {indexing_info.error}")
                     break
@@ -76,7 +84,9 @@ def main():
         documents = client.list_documents(dataset_id)
         print(f"Found {documents.total} documents")
         for doc in documents.data[:3]:  # Show first 3
-            print(f"  - {doc.get('name', 'Unknown')} (Status: {doc.get('indexing_status', 'Unknown')})")
+            print(
+                f"  - {doc.get('name', 'Unknown')} (Status: {doc.get('indexing_status', 'Unknown')})"
+            )
 
         # Example 6: Create segments for the document
         print("\nCreating segments...")
@@ -84,15 +94,17 @@ def main():
             {
                 "content": "This is the first segment of the document.",
                 "answer": "First segment answer",
-                "keywords": ["first", "segment"]
+                "keywords": ["first", "segment"],
             },
             {
                 "content": "This is the second segment with different content.",
                 "answer": "Second segment answer",
-                "keywords": ["second", "content"]
-            }
+                "keywords": ["second", "content"],
+            },
         ]
-        segments_response = client.create_segments(dataset_id, document_id, segments_data)
+        segments_response = client.create_segments(
+            dataset_id, document_id, segments_data
+        )
         print(f"Created {len(segments_response.data)} segments")
 
         # Example 7: List segments
@@ -104,18 +116,20 @@ def main():
         # Example 8: Create metadata field
         print("\nCreating metadata field...")
         metadata_field = client.create_metadata_field(
-            dataset_id=dataset_id,
-            field_type="string",
-            name="category"
+            dataset_id=dataset_id, field_type="string", name="category"
         )
-        print(f"Created metadata field: {metadata_field.name} (Type: {metadata_field.type})")
+        print(
+            f"Created metadata field: {metadata_field.name} (Type: {metadata_field.type})"
+        )
 
         # Example 9: List metadata fields
         print("\nListing metadata fields...")
         metadata_list = client.list_metadata_fields(dataset_id)
         print(f"Built-in fields enabled: {metadata_list.built_in_field_enabled}")
         for field in metadata_list.doc_metadata:
-            print(f"  - {field.name} ({field.type}) - Used {field.use_count or 0} times")
+            print(
+                f"  - {field.name} ({field.type}) - Used {field.use_count or 0} times"
+            )
 
         # Example 10: Update document metadata
         print("\nUpdating document metadata...")
@@ -126,9 +140,9 @@ def main():
                     {
                         "id": metadata_field.id,
                         "value": "technical-docs",
-                        "name": "category"
+                        "name": "category",
                     }
-                ]
+                ],
             }
         ]
         client.update_document_metadata(dataset_id, metadata_operations)
@@ -140,7 +154,7 @@ def main():
             dataset_id=dataset_id,
             document_id=document_id,
             name="Updated Sample Document",
-            text="This is the updated content of the document with additional information."
+            text="This is the updated content of the document with additional information.",
         )
         print(f"Updated document: {updated_doc.document.name}")
 
@@ -150,9 +164,9 @@ def main():
         print("❌ Authentication failed. Please check your API key.")
     except DifyAPIError as e:
         print(f"❌ API error: {e}")
-        if hasattr(e, 'status_code'):
+        if hasattr(e, "status_code"):
             print(f"Status code: {e.status_code}")
-        if hasattr(e, 'error_code'):
+        if hasattr(e, "error_code"):
             print(f"Error code: {e.error_code}")
     except Exception as e:
         print(f"❌ Unexpected error: {e}")

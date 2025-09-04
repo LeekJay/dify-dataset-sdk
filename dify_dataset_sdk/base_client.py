@@ -28,10 +28,7 @@ class BaseClient:
     """
 
     def __init__(
-        self,
-        api_key: str,
-        base_url: str = "https://api.dify.ai",
-        timeout: float = 30.0
+        self, api_key: str, base_url: str = "https://api.dify.ai", timeout: float = 30.0
     ) -> None:
         """Initialize the base client.
 
@@ -46,11 +43,9 @@ class BaseClient:
         if not api_key or not api_key.strip():
             raise ValueError("API key cannot be empty")
         self.api_key = api_key
-        self.base_url = base_url.rstrip('/')
+        self.base_url = base_url.rstrip("/")
         self.timeout = timeout
-        self._client = httpx.Client(
-            timeout=httpx.Timeout(timeout)
-        )
+        self._client = httpx.Client(timeout=httpx.Timeout(timeout))
 
     def _safe_parse_error_response(self, response: httpx.Response) -> Dict[str, Any]:
         """Safely parse error response JSON.
@@ -78,7 +73,7 @@ class BaseClient:
         return {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "User-Agent": "dify-sdk-python/0.1.0"
+            "User-Agent": "dify-knowledge-sdk/0.2.0",
         }
 
     def _handle_response(self, response: httpx.Response) -> Any:
@@ -105,7 +100,9 @@ class BaseClient:
                     try:
                         return response.json()
                     except ValueError as e:
-                        raise DifyAPIError(f"Invalid JSON response: {str(e)}", response.status_code) from e
+                        raise DifyAPIError(
+                            f"Invalid JSON response: {str(e)}", response.status_code
+                        ) from e
                 else:
                     return {}
             elif response.status_code == 204:
@@ -113,7 +110,9 @@ class BaseClient:
             elif response.status_code == 400:
                 error_data = self._safe_parse_error_response(response)
                 error_code = error_data.get("code", "unknown")
-                message = ERROR_CODE_MAPPING.get(error_code, error_data.get("message", "Bad request"))
+                message = ERROR_CODE_MAPPING.get(
+                    error_code, error_data.get("message", "Bad request")
+                )
                 raise DifyValidationError(message, response.status_code, error_code)
             elif response.status_code == 401:
                 raise DifyAuthenticationError("Invalid API key", response.status_code)
@@ -130,13 +129,22 @@ class BaseClient:
                 message = ERROR_CODE_MAPPING.get(error_code, "Conflict")
                 raise DifyConflictError(message, response.status_code, error_code)
             elif response.status_code == 413:
-                raise DifyValidationError("File too large", response.status_code, "file_too_large")
+                raise DifyValidationError(
+                    "File too large", response.status_code, "file_too_large"
+                )
             elif response.status_code == 415:
-                raise DifyValidationError("Unsupported file type", response.status_code, "unsupported_file_type")
+                raise DifyValidationError(
+                    "Unsupported file type",
+                    response.status_code,
+                    "unsupported_file_type",
+                )
             elif response.status_code >= 500:
                 raise DifyServerError("Server error", response.status_code)
             else:
-                raise DifyAPIError(f"Unexpected status code: {response.status_code}", response.status_code)
+                raise DifyAPIError(
+                    f"Unexpected status code: {response.status_code}",
+                    response.status_code,
+                )
         except httpx.HTTPError as e:
             raise DifyConnectionError(f"Connection error: {str(e)}") from e
 
@@ -147,17 +155,13 @@ class BaseClient:
         json: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
         files: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None
+        data: Optional[Dict[str, Any]] = None,
     ) -> Any:
         """Make HTTP request."""
         url = f"{self.base_url}{path}"
 
         try:
-            kwargs = {
-                "method": method,
-                "url": url,
-                "params": params
-            }
+            kwargs = {"method": method, "url": url, "params": params}
 
             if files:
                 kwargs["files"] = files
@@ -190,7 +194,7 @@ class BaseClient:
         path: str,
         json: Optional[Dict[str, Any]] = None,
         files: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None
+        data: Optional[Dict[str, Any]] = None,
     ) -> Any:
         """Make POST request."""
         return self._request("POST", path, json=json, files=files, data=data)
@@ -199,15 +203,15 @@ class BaseClient:
         """Make PATCH request."""
         return self._request("PATCH", path, json=json)
 
-    def delete(self, path: str) -> Any:
+    def delete(self, path: str, json: Optional[Dict[str, Any]] = None) -> Any:
         """Make DELETE request."""
-        return self._request("DELETE", path)
+        return self._request("DELETE", path, json=json)
 
     def close(self) -> None:
         """Close the HTTP client connection and cleanup resources."""
         self._client.close()
 
-    def __enter__(self) -> 'BaseClient':
+    def __enter__(self) -> "BaseClient":
         """Enter context manager.
 
         Returns:

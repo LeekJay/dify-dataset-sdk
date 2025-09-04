@@ -29,7 +29,12 @@ class DifyAPIError(DifyError):
         error_code: Dify-specific error code
     """
 
-    def __init__(self, message: str, status_code: Optional[int] = None, error_code: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        status_code: Optional[int] = None,
+        error_code: Optional[str] = None,
+    ) -> None:
         """Initialize the API error.
 
         Args:
@@ -124,16 +129,16 @@ class DifyTimeoutError(DifyError):
 
 # Error code mappings
 ERROR_CODE_MAPPING = {
-    "no_file_uploaded": "请上传你的文件",
-    "too_many_files": "只允许上传一个文件",
-    "file_too_large": "文件大小超出限制",
-    "unsupported_file_type": "不支持的文件类型",
-    "high_quality_dataset_only": '当前操作仅支持"高质量"知识库',
-    "dataset_not_initialized": "知识库仍在初始化或索引中。请稍候",
-    "archived_document_immutable": "归档文档不可编辑",
-    "dataset_name_duplicate": "知识库名称已存在，请修改你的知识库名称",
-    "invalid_action": "无效操作",
-    "document_already_finished": "文档已处理完成。请刷新页面或查看文档详情",
-    "document_indexing": "文档正在处理中，无法编辑",
-    "invalid_metadata": "元数据内容不正确。请检查并验证",
+    "no_file_uploaded": "Please upload your file",
+    "too_many_files": "Only one file upload is allowed",
+    "file_too_large": "File size exceeds limit",
+    "unsupported_file_type": "Unsupported file type",
+    "high_quality_dataset_only": 'Current operation only supports "high quality" datasets',
+    "dataset_not_initialized": "Dataset is still initializing or indexing. Please wait",
+    "archived_document_immutable": "Archived documents cannot be edited",
+    "dataset_name_duplicate": "Dataset name already exists, please modify your dataset name",
+    "invalid_action": "Invalid operation",
+    "document_already_finished": "Document has been processed. Please refresh the page or view document details",
+    "document_indexing": "Document is being processed and cannot be edited",
+    "invalid_metadata": "Metadata content is incorrect. Please check and validate",
 }
