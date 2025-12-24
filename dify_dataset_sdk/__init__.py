@@ -1,5 +1,45 @@
-from .client import DifyDatasetClient  # noqa: E402, I001
-from .exceptions import (
+"""Dify Dataset SDK - Python SDK for Dify Dataset API.
+
+This SDK provides a modular interface to the Dify Knowledge Base API with
+separate clients for different resource types:
+
+- DifyDatasetClient: Main client with access to all sub-clients
+- datasets: Dataset management (create, list, update, delete, retrieve)
+- documents: Document management (text/file upload, update, delete)
+- segments: Segment and child chunk management
+- tags: Knowledge tags and metadata management
+- models: Embedding model listing
+
+Example:
+    ```python
+    from dify_dataset_sdk import DifyDatasetClient
+
+    client = DifyDatasetClient(api_key="your-api-key")
+
+    # Dataset operations
+    dataset = client.datasets.create(name="My Knowledge Base")
+
+    # Document operations
+    doc = client.documents.create_by_text(
+        dataset_id=dataset.id,
+        name="My Document",
+        text="Document content..."
+    )
+
+    # Segment operations
+    segments = client.segments.list(dataset.id, doc.document.id)
+
+    # Tag operations
+    tag = client.tags.create(name="Important")
+    client.tags.bind_to_dataset(dataset.id, tag_ids=[tag.id])
+
+    # Model operations
+    models = client.models.list_embedding_models()
+    ```
+"""
+
+# Exceptions
+from ._exceptions import (
     ERROR_CODE_MAPPING,
     DifyAPIError,
     DifyAuthenticationError,
@@ -11,70 +51,78 @@ from .exceptions import (
     DifyTimeoutError,
     DifyValidationError,
 )
+from .client import DifyDatasetClient
 
-from .models import (
-    # Base models
-    BaseResponse,
-    PaginatedResponse,
-    # Processing rules
-    PreProcessingRule,
-    Segmentation,
-    SubchunkSegmentation,
-    ProcessRuleConfig,
-    ProcessRule,
-    # Retrieval models
-    RerankingModel,
+# Dataset models
+from .datasets import (
+    CreateDatasetRequest,
+    Dataset,
     MetadataCondition,
     MetadataFilteringConditions,
+    PaginatedResponse,
+    RerankingModel,
     RetrievalModel,
-    # Core data models
-    DataSourceInfo,
-    Document,
-    Dataset,
-    Segment,
-    ChildChunk,
-    IndexingStatus,
-    Metadata,
-    MetadataValue,
-    DocumentMetadata,
-    RetrievalResult,
-    KnowledgeTag,
-    # Request models
-    CreateDatasetRequest,
-    UpdateDatasetRequest,
-    CreateDocumentByTextRequest,
-    CreateDocumentByFileData,
-    UpdateDocumentByTextRequest,
-    UpdateDocumentByFileData,
-    BatchDocumentStatusRequest,
-    CreateSegmentRequest,
-    UpdateSegmentRequest,
-    CreateChildChunkRequest,
-    UpdateChildChunkRequest,
     RetrievalRequest,
-    CreateMetadataRequest,
-    UpdateMetadataRequest,
-    UpdateDocumentMetadataRequest,
-    CreateKnowledgeTagRequest,
-    UpdateKnowledgeTagRequest,
-    DeleteKnowledgeTagRequest,
-    BindDatasetToTagRequest,
-    UnbindDatasetFromTagRequest,
-    # Response models
-    DocumentResponse,
-    SegmentResponse,
-    ChildChunkResponse,
-    MetadataListResponse,
-    IndexingStatusResponse,
     RetrievalResponse,
-    EmbeddingModelResponse,
-    SuccessResponse,
-    ErrorResponse,
+    RetrievalResult,
+    UpdateDatasetRequest,
 )
 
-__version__ = "0.2.0"
+# Document models
+from .documents import (
+    BatchDocumentStatusRequest,
+    CreateDocumentByFileData,
+    CreateDocumentByTextRequest,
+    DataSourceInfo,
+    Document,
+    DocumentResponse,
+    IndexingStatus,
+    IndexingStatusResponse,
+    PreProcessingRule,
+    ProcessRule,
+    ProcessRuleConfig,
+    Segmentation,
+    SubchunkSegmentation,
+    UpdateDocumentByFileData,
+    UpdateDocumentByTextRequest,
+)
+
+# Model API models
+from .models_api import EmbeddingModelResponse
+
+# Segment models
+from .segments import (
+    ChildChunk,
+    ChildChunkResponse,
+    CreateChildChunkRequest,
+    CreateSegmentRequest,
+    Segment,
+    SegmentResponse,
+    UpdateChildChunkRequest,
+    UpdateSegmentRequest,
+)
+
+# Tag models
+from .tags import (
+    BindDatasetToTagRequest,
+    CreateKnowledgeTagRequest,
+    CreateMetadataRequest,
+    DeleteKnowledgeTagRequest,
+    DocumentMetadata,
+    KnowledgeTag,
+    Metadata,
+    MetadataListResponse,
+    MetadataValue,
+    UnbindDatasetFromTagRequest,
+    UpdateDocumentMetadataRequest,
+    UpdateKnowledgeTagRequest,
+    UpdateMetadataRequest,
+)
+
+__version__ = "0.4.0"
 
 __all__ = [
+    # Main client
     "DifyDatasetClient",
     # Exceptions
     "DifyError",
@@ -87,61 +135,57 @@ __all__ = [
     "DifyConnectionError",
     "DifyTimeoutError",
     "ERROR_CODE_MAPPING",
-    # Base models
-    "BaseResponse",
-    "PaginatedResponse",
-    # Processing rules
-    "PreProcessingRule",
-    "Segmentation",
-    "SubchunkSegmentation",
-    "ProcessRuleConfig",
-    "ProcessRule",
-    # Retrieval models
+    # Dataset models
+    "Dataset",
+    "CreateDatasetRequest",
+    "UpdateDatasetRequest",
+    "RetrievalModel",
     "RerankingModel",
     "MetadataCondition",
     "MetadataFilteringConditions",
-    "RetrievalModel",
-    # Core data models
-    "DataSourceInfo",
-    "Document",
-    "Dataset",
-    "Segment",
-    "ChildChunk",
-    "IndexingStatus",
-    "Metadata",
-    "MetadataValue",
-    "DocumentMetadata",
+    "RetrievalRequest",
+    "RetrievalResponse",
     "RetrievalResult",
-    "KnowledgeTag",
-    # Request models
-    "CreateDatasetRequest",
-    "UpdateDatasetRequest",
+    "PaginatedResponse",
+    # Document models
+    "Document",
+    "DocumentResponse",
+    "DataSourceInfo",
+    "IndexingStatus",
+    "IndexingStatusResponse",
+    "ProcessRule",
+    "ProcessRuleConfig",
+    "PreProcessingRule",
+    "Segmentation",
+    "SubchunkSegmentation",
     "CreateDocumentByTextRequest",
     "CreateDocumentByFileData",
     "UpdateDocumentByTextRequest",
     "UpdateDocumentByFileData",
     "BatchDocumentStatusRequest",
+    # Segment models
+    "Segment",
+    "SegmentResponse",
+    "ChildChunk",
+    "ChildChunkResponse",
     "CreateSegmentRequest",
     "UpdateSegmentRequest",
     "CreateChildChunkRequest",
     "UpdateChildChunkRequest",
-    "RetrievalRequest",
-    "CreateMetadataRequest",
-    "UpdateMetadataRequest",
-    "UpdateDocumentMetadataRequest",
+    # Tag models
+    "KnowledgeTag",
     "CreateKnowledgeTagRequest",
     "UpdateKnowledgeTagRequest",
     "DeleteKnowledgeTagRequest",
     "BindDatasetToTagRequest",
     "UnbindDatasetFromTagRequest",
-    # Response models
-    "DocumentResponse",
-    "SegmentResponse",
-    "ChildChunkResponse",
+    "Metadata",
+    "MetadataValue",
+    "DocumentMetadata",
     "MetadataListResponse",
-    "IndexingStatusResponse",
-    "RetrievalResponse",
+    "CreateMetadataRequest",
+    "UpdateMetadataRequest",
+    "UpdateDocumentMetadataRequest",
+    # Model API models
     "EmbeddingModelResponse",
-    "SuccessResponse",
-    "ErrorResponse",
 ]

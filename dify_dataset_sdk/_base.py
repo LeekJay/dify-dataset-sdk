@@ -1,8 +1,10 @@
+"""Base HTTP client for Dify API."""
+
 from typing import Any, Dict, Optional
 
 import httpx
 
-from .exceptions import (
+from ._exceptions import (
     ERROR_CODE_MAPPING,
     DifyAPIError,
     DifyAuthenticationError,
@@ -27,9 +29,7 @@ class BaseClient:
         timeout (float): Request timeout in seconds
     """
 
-    def __init__(
-        self, api_key: str, base_url: str = "https://api.dify.ai", timeout: float = 30.0
-    ) -> None:
+    def __init__(self, api_key: str, base_url: str = "https://api.dify.ai", timeout: float = 30.0) -> None:
         """Initialize the base client.
 
         Args:
@@ -73,7 +73,7 @@ class BaseClient:
         return {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "User-Agent": "dify-knowledge-sdk/0.2.0",
+            "User-Agent": "dify-dataset-sdk/0.4.0",
         }
 
     def _handle_response(self, response: httpx.Response) -> Any:
@@ -100,9 +100,7 @@ class BaseClient:
                     try:
                         return response.json()
                     except ValueError as e:
-                        raise DifyAPIError(
-                            f"Invalid JSON response: {str(e)}", response.status_code
-                        ) from e
+                        raise DifyAPIError(f"Invalid JSON response: {str(e)}", response.status_code) from e
                 else:
                     return {}
             elif response.status_code == 204:
@@ -110,28 +108,25 @@ class BaseClient:
             elif response.status_code == 400:
                 error_data = self._safe_parse_error_response(response)
                 error_code = error_data.get("code", "unknown")
-                message = ERROR_CODE_MAPPING.get(
-                    error_code, error_data.get("message", "Bad request")
-                )
+                default_msg = error_data.get("message") or "Bad request"
+                message = ERROR_CODE_MAPPING.get(error_code) or default_msg
                 raise DifyValidationError(message, response.status_code, error_code)
             elif response.status_code == 401:
                 raise DifyAuthenticationError("Invalid API key", response.status_code)
             elif response.status_code == 403:
                 error_data = self._safe_parse_error_response(response)
                 error_code = error_data.get("code", "forbidden")
-                message = ERROR_CODE_MAPPING.get(error_code, "Forbidden")
+                message = ERROR_CODE_MAPPING.get(error_code) or "Forbidden"
                 raise DifyValidationError(message, response.status_code, error_code)
             elif response.status_code == 404:
                 raise DifyNotFoundError("Resource not found", response.status_code)
             elif response.status_code == 409:
                 error_data = self._safe_parse_error_response(response)
                 error_code = error_data.get("code", "conflict")
-                message = ERROR_CODE_MAPPING.get(error_code, "Conflict")
+                message = ERROR_CODE_MAPPING.get(error_code) or "Conflict"
                 raise DifyConflictError(message, response.status_code, error_code)
             elif response.status_code == 413:
-                raise DifyValidationError(
-                    "File too large", response.status_code, "file_too_large"
-                )
+                raise DifyValidationError("File too large", response.status_code, "file_too_large")
             elif response.status_code == 415:
                 raise DifyValidationError(
                     "Unsupported file type",
@@ -161,7 +156,7 @@ class BaseClient:
         url = f"{self.base_url}{path}"
 
         try:
-            kwargs = {"method": method, "url": url, "params": params}
+            kwargs: Dict[str, Any] = {"method": method, "url": url, "params": params}
 
             if files:
                 kwargs["files"] = files
@@ -175,7 +170,7 @@ class BaseClient:
                 kwargs["json"] = json
                 kwargs["headers"] = self._get_headers()
 
-            response = self._client.request(**kwargs)  # type: ignore[arg-type]
+            response = self._client.request(**kwargs)
             return self._handle_response(response)
 
         except httpx.TimeoutException as e:

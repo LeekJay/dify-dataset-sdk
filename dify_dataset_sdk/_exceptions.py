@@ -1,3 +1,5 @@
+"""Exception classes for Dify Dataset SDK."""
+
 from typing import Optional
 
 

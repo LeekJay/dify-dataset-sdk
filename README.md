@@ -1,303 +1,479 @@
-# Dify Knowledge Base SDK
+# Dify Dataset SDK
 
-A comprehensive Python SDK for interacting with Dify's Knowledge Base API. This SDK provides easy-to-use methods for managing datasets (knowledge bases), documents, segments, and metadata through Dify's REST API.
+用于管理 Dify 知识库的 Python SDK。
 
-## Features
+## 特性
 
-- 📚 **Complete API Coverage**: Support for all Dify Knowledge Base API endpoints
-- 🔐 **Authentication**: Secure API key-based authentication
-- 📄 **Document Management**: Create, update, delete documents from text or files
-- 🗂️ **Dataset Operations**: Full CRUD operations for knowledge bases
-- ✂️ **Segment Control**: Manage document segments (chunks) with fine-grained control
-- 🏷️ **Knowledge Tags**: Create and manage knowledge tags for dataset organization
-- 📊 **Metadata Support**: Create and manage custom metadata fields
-- 🔍 **Advanced Retrieval**: Multiple search methods (semantic, full-text, hybrid)
-- 🔗 **Batch Operations**: Efficient batch processing for documents and metadata
-- 🌐 **HTTP Client**: Built on httpx for reliable and fast HTTP communications
-- ⚠️ **Error Handling**: Comprehensive error handling with custom exceptions
-- 📈 **Progress Monitoring**: Track document indexing progress with detailed status
-- 🛡️ **Retry Mechanisms**: Built-in retry logic for network resilience
-- 🔒 **Type Safety**: Full type hints with Pydantic models
-- 📱 **Rich Examples**: Comprehensive examples covering all use cases
+- 📚 **模块化设计**: 按功能分离的客户端模块（datasets、documents、segments、tags、models）
+- 🔐 **安全认证**: 基于 API Key 的安全认证
+- 📄 **文档管理**: 支持文本和文件上传创建文档
+- 🗂️ **数据集操作**: 完整的知识库 CRUD 操作
+- ✂️ **文档块管理**: 精细化的文档块（chunks）和子块管理
+- 🏷️ **标签系统**: 知识库标签和元数据管理
+- 🔍 **高级检索**: 支持语义搜索、全文搜索、混合搜索
+- 🔒 **类型安全**: 完整的类型提示和 Pydantic 模型
+- ⚠️ **异常处理**: 完善的错误处理机制
 
-## Installation
+## 安装
 
 ```bash
 pip install dify-dataset-sdk
 ```
 
-## Quick Start
+## 快速开始
 
 ```python
 from dify_dataset_sdk import DifyDatasetClient
 
-# Initialize the client
-client = DifyDatasetClient(api_key="your-api-key-here")
+# 初始化客户端
+client = DifyDatasetClient(api_key="your-api-key")
 
-# Create a new dataset (knowledge base)
-dataset = client.create_dataset(
-    name="My Knowledge Base",
-    permission="only_me"
-)
+# 创建知识库
+dataset = client.datasets.create(name="我的知识库")
 
-# Create a document from text
-doc_response = client.create_document_by_text(
+# 添加文档
+doc = client.documents.create_by_text(
     dataset_id=dataset.id,
-    name="Sample Document",
-    text="This is a sample document for the knowledge base.",
-    indexing_technique="high_quality"
+    name="示例文档",
+    text="这是文档内容..."
 )
 
-# List all documents
-documents = client.list_documents(dataset.id)
-print(f"Total documents: {documents.total}")
-
-# Close the client
-client.close()
+# 检索知识库
+results = client.datasets.retrieve(dataset_id=dataset.id, query="搜索关键词")
 ```
 
-## Configuration
+## 客户端结构
 
-### API Key
-
-Get your API key from the Dify knowledge base API page:
-
-1. Go to your Dify knowledge base
-2. Navigate to the **API** section in the left sidebar
-3. Generate or copy your API key from the **API Keys** section
-
-### Base URL
-
-By default, the SDK uses `https://api.dify.ai` as the base URL. You can customize this:
+SDK 采用模块化设计，通过统一的 `DifyDatasetClient` 入口访问各功能模块：
 
 ```python
+client = DifyDatasetClient(api_key="your-api-key")
+
+client.datasets    # 数据集管理
+client.documents   # 文档管理
+client.segments    # 文档块管理
+client.tags        # 标签和元数据管理
+client.models      # 嵌入模型查询
+```
+
+## API 参考
+
+### 初始化客户端
+
+```python
+from dify_dataset_sdk import DifyDatasetClient
+
 client = DifyDatasetClient(
-    api_key="your-api-key",
-    base_url="https://your-custom-dify-instance.com",
-    timeout=60.0  # Custom timeout in seconds
+    api_key="your-api-key",           # API密钥（必需）
+    base_url="https://api.dify.ai",   # API地址（可选）
+    timeout=30.0                       # 超时时间（可选）
+)
+
+# 支持上下文管理器
+with DifyDatasetClient(api_key="your-api-key") as client:
+    dataset = client.datasets.create(name="test")
+```
+
+---
+
+### 数据集管理 (client.datasets)
+
+#### 创建数据集
+
+```python
+dataset = client.datasets.create(
+    name="知识库名称",                    # 必需
+    description="知识库描述",             # 可选
+    indexing_technique="high_quality",   # 可选: "high_quality" | "economy"
+    permission="only_me",                # 可选: "only_me" | "all_team_members" | "partial_members"
+    embedding_model="text-embedding-3-small",      # 可选
+    embedding_model_provider="openai",             # 可选
 )
 ```
 
-## Core Features
-
-### Dataset Management
+#### 获取数据集列表
 
 ```python
-# Create a dataset
-dataset = client.create_dataset(
-    name="Technical Documentation",
-    permission="only_me",
-    description="Internal technical docs"
+result = client.datasets.list(
+    keyword="搜索关键词",    # 可选
+    tag_ids=["tag-id"],     # 可选
+    page=1,                  # 可选，默认1
+    limit=20,                # 可选，默认20
 )
 
-# List datasets with pagination
-datasets = client.list_datasets(page=1, limit=20)
-
-# Delete a dataset
-client.delete_dataset(dataset_id)
+for dataset in result.data:
+    print(f"{dataset['id']}: {dataset['name']}")
 ```
 
-### Document Operations
-
-#### From Text
+#### 获取数据集详情
 
 ```python
-# Create document from text
-doc_response = client.create_document_by_text(
-    dataset_id=dataset_id,
-    name="API Documentation",
-    text="Complete API documentation content...",
+dataset = client.datasets.get(dataset_id="dataset-id")
+print(dataset.name)
+```
+
+#### 更新数据集
+
+```python
+dataset = client.datasets.update(
+    dataset_id="dataset-id",
+    name="新名称",
+    description="新描述",
+)
+```
+
+#### 删除数据集
+
+```python
+client.datasets.delete(dataset_id="dataset-id")
+```
+
+#### 知识库检索
+
+```python
+from dify_dataset_sdk import RetrievalModel
+
+# 基本检索
+results = client.datasets.retrieve(
+    dataset_id="dataset-id",
+    query="搜索内容"
+)
+
+# 高级检索配置
+retrieval_model = RetrievalModel(
+    search_method="hybrid_search",  # "hybrid_search" | "semantic_search" | "full_text_search" | "keyword_search"
+    reranking_enable=True,
+    top_k=10,
+    score_threshold_enabled=True,
+    score_threshold=0.5,
+)
+
+results = client.datasets.retrieve(
+    dataset_id="dataset-id",
+    query="搜索内容",
+    retrieval_model=retrieval_model
+)
+
+for record in results.records:
+    print(f"内容: {record['content']}")
+    print(f"分数: {record['score']}")
+```
+
+---
+
+### 文档管理 (client.documents)
+
+#### 通过文本创建文档
+
+```python
+from dify_dataset_sdk import ProcessRule
+
+response = client.documents.create_by_text(
+    dataset_id="dataset-id",
+    name="文档名称",
+    text="文档内容...",
+    indexing_technique="high_quality",   # 可选
+    doc_form="text_model",               # 可选: "text_model" | "hierarchical_model" | "qa_model"
+    doc_language="zh",                   # 可选，Q&A模式使用
+)
+
+print(f"文档ID: {response.document.id}")
+print(f"批次ID: {response.batch}")
+```
+
+#### 通过文件创建文档
+
+```python
+response = client.documents.create_by_file(
+    dataset_id="dataset-id",
+    file_path="/path/to/file.pdf",
     indexing_technique="high_quality",
-    process_rule_mode="automatic"
 )
 ```
 
-#### From File
+#### 获取文档列表
 
 ```python
-# Create document from file
-doc_response = client.create_document_by_file(
-    dataset_id=dataset_id,
-    file_path="./documentation.pdf",
-    indexing_technique="high_quality"
+result = client.documents.list(
+    dataset_id="dataset-id",
+    keyword="搜索关键词",    # 可选
+    page=1,
+    limit=20,
 )
 ```
 
-#### Custom Processing Rules
+#### 获取文档详情
 
 ```python
-# Custom processing configuration
-process_rule_config = {
-    "rules": {
-        "pre_processing_rules": [
-            {"id": "remove_extra_spaces", "enabled": True},
-            {"id": "remove_urls_emails", "enabled": True}
-        ],
-        "segmentation": {
-            "separator": "###",
-            "max_tokens": 500
+document = client.documents.get(
+    dataset_id="dataset-id",
+    document_id="document-id",
+    metadata="all",  # "all" | "only" | "without"
+)
+```
+
+#### 更新文档（文本）
+
+```python
+response = client.documents.update_by_text(
+    dataset_id="dataset-id",
+    document_id="document-id",
+    name="新名称",
+    text="新内容",
+)
+```
+
+#### 更新文档（文件）
+
+```python
+response = client.documents.update_by_file(
+    dataset_id="dataset-id",
+    document_id="document-id",
+    file_path="/path/to/new_file.pdf",
+)
+```
+
+#### 删除文档
+
+```python
+client.documents.delete(
+    dataset_id="dataset-id",
+    document_id="document-id"
+)
+```
+
+#### 获取索引状态
+
+```python
+status = client.documents.get_indexing_status(
+    dataset_id="dataset-id",
+    batch="batch-id"  # 创建文档时返回的batch
+)
+
+for item in status.data:
+    print(f"状态: {item.indexing_status}")
+    print(f"进度: {item.completed_segments}/{item.total_segments}")
+```
+
+#### 批量更新文档状态
+
+```python
+client.documents.batch_update_status(
+    dataset_id="dataset-id",
+    action="enable",  # "enable" | "disable" | "archive" | "un_archive"
+    document_ids=["doc-id-1", "doc-id-2"]
+)
+```
+
+---
+
+### 文档块管理 (client.segments)
+
+#### 创建文档块
+
+```python
+response = client.segments.create(
+    dataset_id="dataset-id",
+    document_id="document-id",
+    segments=[
+        {
+            "content": "块内容",
+            "keywords": ["关键词1", "关键词2"],
+            "answer": "答案内容（Q&A模式）"  # 可选
         }
-    }
-}
-
-doc_response = client.create_document_by_file(
-    dataset_id=dataset_id,
-    file_path="document.txt",
-    process_rule_mode="custom",
-    process_rule_config=process_rule_config
+    ]
 )
 ```
 
-### Segment Management
+#### 获取文档块列表
 
 ```python
-# Create segments
-segments_data = [
-    {
-        "content": "First segment content",
-        "answer": "Answer for first segment",
-        "keywords": ["keyword1", "keyword2"]
-    },
-    {
-        "content": "Second segment content",
-        "answer": "Answer for second segment",
-        "keywords": ["keyword3", "keyword4"]
-    }
-]
+response = client.segments.list(
+    dataset_id="dataset-id",
+    document_id="document-id",
+    keyword="搜索关键词",    # 可选
+    status="completed",      # 可选
+    page=1,
+    limit=20,
+)
 
-segments = client.create_segments(dataset_id, document_id, segments_data)
+for segment in response.data:
+    print(f"{segment.id}: {segment.content[:50]}...")
+```
 
-# List segments
-segments = client.list_segments(dataset_id, document_id)
+#### 获取文档块详情
 
-# Update a segment
-client.update_segment(
-    dataset_id=dataset_id,
-    document_id=document_id,
-    segment_id=segment_id,
+```python
+segment = client.segments.get(
+    dataset_id="dataset-id",
+    document_id="document-id",
+    segment_id="segment-id"
+)
+```
+
+#### 更新文档块
+
+```python
+client.segments.update(
+    dataset_id="dataset-id",
+    document_id="document-id",
+    segment_id="segment-id",
     segment_data={
-        "content": "Updated content",
-        "keywords": ["updated", "keywords"],
-        "enabled": True
+        "content": "更新后的内容",
+        "keywords": ["新关键词"],
+        "enabled": True,
     }
 )
-
-# Delete a segment
-client.delete_segment(dataset_id, document_id, segment_id)
 ```
 
-### Knowledge Tags Management
+#### 删除文档块
 
 ```python
-# Create knowledge tags
-tag = client.create_knowledge_tag(name="Technical Documentation")
-dept_tag = client.create_knowledge_tag(name="Engineering Department")
-
-# Bind datasets to tags
-client.bind_dataset_to_tag(dataset_id, [tag.id, dept_tag.id])
-
-# List all knowledge tags
-tags = client.list_knowledge_tags()
-
-# Get tags for a specific dataset
-dataset_tags = client.get_dataset_tags(dataset_id)
-
-# Filter datasets by tags
-filtered_datasets = client.list_datasets(tag_ids=[tag.id])
+client.segments.delete(
+    dataset_id="dataset-id",
+    document_id="document-id",
+    segment_id="segment-id"
+)
 ```
 
-### Metadata Management
+#### 子块操作（分层模式）
 
 ```python
-# Create metadata fields
-category_field = client.create_metadata_field(
-    dataset_id=dataset_id,
-    field_type="string",
-    name="category"
+# 创建子块
+client.segments.create_child_chunk(
+    dataset_id="dataset-id",
+    document_id="document-id",
+    segment_id="segment-id",
+    content="子块内容"
 )
 
-priority_field = client.create_metadata_field(
-    dataset_id=dataset_id,
-    field_type="number",
-    name="priority"
+# 获取子块列表
+response = client.segments.list_child_chunks(
+    dataset_id="dataset-id",
+    document_id="document-id",
+    segment_id="segment-id",
 )
 
-# Update document metadata
-metadata_operations = [
-    {
-        "document_id": document_id,
-        "metadata_list": [
-            {
-                "id": category_field.id,
-                "value": "technical",
-                "name": "category"
-            },
-            {
-                "id": priority_field.id,
-                "value": "5",
-                "name": "priority"
-            }
-        ]
-    }
-]
+# 更新子块
+client.segments.update_child_chunk(
+    dataset_id="dataset-id",
+    document_id="document-id",
+    segment_id="segment-id",
+    child_chunk_id="child-chunk-id",
+    content="更新后的子块内容"
+)
 
-client.update_document_metadata(dataset_id, metadata_operations)
+# 删除子块
+client.segments.delete_child_chunk(
+    dataset_id="dataset-id",
+    document_id="document-id",
+    segment_id="segment-id",
+    child_chunk_id="child-chunk-id"
+)
 ```
 
-### Advanced Retrieval
+---
+
+### 标签和元数据管理 (client.tags)
+
+#### 知识库标签
 
 ```python
-# Semantic search
-results = client.retrieve(
-    dataset_id=dataset_id,
-    query="How to implement authentication?",
-    retrieval_config={
-        "search_method": "semantic_search",
-        "top_k": 5,
-        "score_threshold": 0.7
-    }
+# 创建标签
+tag = client.tags.create(name="重要")
+
+# 获取所有标签
+tags = client.tags.list()
+
+# 更新标签
+tag = client.tags.update(tag_id="tag-id", name="非常重要")
+
+# 删除标签
+client.tags.delete(tag_id="tag-id")
+
+# 绑定标签到数据集
+client.tags.bind_to_dataset(
+    dataset_id="dataset-id",
+    tag_ids=["tag-id-1", "tag-id-2"]
 )
 
-# Hybrid search (combining semantic and full-text)
-results = client.retrieve(
-    dataset_id=dataset_id,
-    query="API documentation",
-    retrieval_config={
-        "search_method": "hybrid_search",
-        "top_k": 10,
-        "rerank_model": {
-            "model": "rerank-multilingual-v2.0",
-            "mode": "reranking_model"
+# 解绑标签
+client.tags.unbind_from_dataset(
+    dataset_id="dataset-id",
+    tag_id="tag-id"
+)
+
+# 获取数据集的标签
+tags = client.tags.get_dataset_tags(dataset_id="dataset-id")
+```
+
+#### 元数据管理
+
+```python
+# 创建元数据字段
+metadata = client.tags.create_metadata(
+    dataset_id="dataset-id",
+    field_type="string",  # "string" | "number" | "time"
+    name="作者"
+)
+
+# 获取元数据字段列表
+response = client.tags.list_metadata(dataset_id="dataset-id")
+
+# 更新元数据字段
+metadata = client.tags.update_metadata(
+    dataset_id="dataset-id",
+    metadata_id="metadata-id",
+    name="新字段名"
+)
+
+# 删除元数据字段
+client.tags.delete_metadata(
+    dataset_id="dataset-id",
+    metadata_id="metadata-id"
+)
+
+# 启用/禁用内置元数据
+client.tags.toggle_built_in_metadata(
+    dataset_id="dataset-id",
+    action="enable"  # "enable" | "disable"
+)
+
+# 更新文档元数据值
+client.tags.update_document_metadata(
+    dataset_id="dataset-id",
+    operation_data=[
+        {
+            "document_id": "doc-id",
+            "metadata_list": [
+                {"id": "metadata-id", "value": "值", "name": "字段名"}
+            ]
         }
-    }
-)
-
-# Full-text search
-results = client.retrieve(
-    dataset_id=dataset_id,
-    query="database configuration",
-    retrieval_config={"search_method": "full_text_search", "top_k": 5}
+    ]
 )
 ```
 
-### Progress Monitoring
+---
+
+### 嵌入模型 (client.models)
 
 ```python
-# Monitor document indexing progress
-status = client.get_document_indexing_status(dataset_id, batch_id)
+# 获取可用的嵌入模型列表
+response = client.models.list_embedding_models()
 
-if status.data:
-    indexing_info = status.data[0]
-    print(f"Status: {indexing_info.indexing_status}")
-    print(f"Progress: {indexing_info.completed_segments}/{indexing_info.total_segments}")
+for provider in response.data:
+    print(f"提供商: {provider['provider']}")
+    for model in provider.get('models', []):
+        print(f"  - {model['model']}")
 ```
 
-## Error Handling
+---
 
-The SDK provides comprehensive error handling with specific exception types:
+## 异常处理
 
 ```python
-from dify_dataset_sdk.exceptions import (
+from dify_dataset_sdk import (
+    DifyError,
     DifyAPIError,
     DifyAuthenticationError,
     DifyValidationError,
@@ -305,193 +481,286 @@ from dify_dataset_sdk.exceptions import (
     DifyConflictError,
     DifyServerError,
     DifyConnectionError,
-    DifyTimeoutError
+    DifyTimeoutError,
 )
 
 try:
-    dataset = client.create_dataset(name="Test Dataset")
-except DifyAuthenticationError:
-    print("Invalid API key")
+    dataset = client.datasets.get(dataset_id="invalid-id")
+except DifyNotFoundError as e:
+    print(f"资源未找到: {e.message}")
+except DifyAuthenticationError as e:
+    print(f"认证失败: {e.message}")
 except DifyValidationError as e:
-    print(f"Validation error: {e}")
-except DifyConflictError as e:
-    print(f"Conflict: {e}")  # e.g., duplicate dataset name
+    print(f"参数错误: {e.message}, 错误码: {e.error_code}")
 except DifyAPIError as e:
-    print(f"API error: {e}")
-    print(f"Status code: {e.status_code}")
-    print(f"Error code: {e.error_code}")
+    print(f"API错误: {e.message}, HTTP状态码: {e.status_code}")
+except DifyConnectionError as e:
+    print(f"连接错误: {e.message}")
+except DifyTimeoutError as e:
+    print(f"请求超时: {e.message}")
 ```
 
-## Advanced Usage
-
-For more advanced scenarios, see the [examples](./examples/) directory:
-
-- [Basic Usage](./examples/basic_usage.py) - Simple operations and getting started
-- [Advanced Usage](./examples/advanced_usage.py) - Complex workflows and custom processing
-- [Knowledge Tag Management](./examples/knowledge_tag_management.py) - Tag-based dataset organization
-- [Batch Document Processing](./examples/batch_document_processing.py) - Parallel processing and batch operations
-- [Advanced Retrieval Analysis](./examples/advanced_retrieval_analysis.py) - Retrieval method comparison and analysis
-- [Error Handling and Monitoring](./examples/error_handling_and_monitoring.py) - Production-ready error handling and monitoring
-
-### Key Advanced Features
-
-#### Batch Processing
-
-Process multiple documents efficiently with parallel operations:
+## 完整示例
 
 ```python
-from concurrent.futures import ThreadPoolExecutor
+from dify_dataset_sdk import DifyDatasetClient, RetrievalModel
 
-def upload_document(file_path):
-    return client.create_document_by_file(
-        dataset_id=dataset_id,
-        file_path=file_path,
-        indexing_technique="high_quality"
-    )
+def main():
+    # 初始化客户端
+    with DifyDatasetClient(api_key="your-api-key") as client:
+        # 1. 创建知识库
+        dataset = client.datasets.create(
+            name="产品文档库",
+            description="存储产品相关文档"
+        )
+        print(f"创建知识库: {dataset.id}")
 
-# Parallel document upload
-with ThreadPoolExecutor(max_workers=3) as executor:
-    futures = [executor.submit(upload_document, file) for file in file_list]
-    results = [future.result() for future in futures]
+        # 2. 添加文档
+        doc_response = client.documents.create_by_text(
+            dataset_id=dataset.id,
+            name="产品介绍",
+            text="""
+            这是一款智能助手产品。
+            主要功能包括：
+            1. 自然语言理解
+            2. 知识库检索
+            3. 多轮对话
+            """
+        )
+        print(f"创建文档: {doc_response.document.id}")
+
+        # 3. 等待索引完成（实际使用中应轮询检查）
+        import time
+        time.sleep(5)
+
+        # 4. 检索知识库
+        results = client.datasets.retrieve(
+            dataset_id=dataset.id,
+            query="产品有哪些功能",
+            retrieval_model=RetrievalModel(
+                search_method="hybrid_search",
+                top_k=3
+            )
+        )
+
+        print("\n检索结果:")
+        for record in results.records:
+            print(f"- {record['content'][:100]}...")
+            print(f"  分数: {record['score']}")
+
+        # 5. 添加标签
+        tag = client.tags.create(name="产品")
+        client.tags.bind_to_dataset(dataset.id, tag_ids=[tag.id])
+        print(f"\n已添加标签: {tag.name}")
+
+if __name__ == "__main__":
+    main()
 ```
 
-#### Error Handling with Retry
+## SDK 结构
 
-Implement robust error handling with automatic retry:
-
-```python
-from dify_dataset_sdk.exceptions import DifyTimeoutError, DifyConnectionError
-import time
-
-def safe_operation_with_retry(operation, max_retries=3):
-    for attempt in range(max_retries):
-        try:
-            return operation()
-        except (DifyTimeoutError, DifyConnectionError) as e:
-            if attempt < max_retries - 1:
-                wait_time = 2 ** attempt  # Exponential backoff
-                time.sleep(wait_time)
-                continue
-            raise e
+```text
+dify_dataset_sdk/
+├── __init__.py           # 统一导出入口
+├── _base.py              # HTTP 客户端基类
+├── _exceptions.py        # 异常类定义
+├── client.py             # DifyClient 主入口
+├── datasets/             # 数据集模块
+│   ├── client.py         # DatasetsClient
+│   └── models.py         # Dataset 相关模型
+├── documents/            # 文档模块
+│   ├── client.py         # DocumentsClient
+│   └── models.py         # Document 相关模型
+├── segments/             # 文档块模块
+│   ├── client.py         # SegmentsClient
+│   └── models.py         # Segment/ChildChunk 相关模型
+├── tags/                 # 标签和元数据模块
+│   ├── client.py         # TagsClient
+│   └── models.py         # Tag/Metadata 相关模型
+└── models_api/           # 嵌入模型模块
+    ├── client.py         # ModelsClient
+    └── models.py         # EmbeddingModel 相关模型
 ```
 
-#### Health Monitoring
+## 从 v0.3.0 迁移到 v0.4.0
 
-Monitor SDK performance and API health:
+### 主要变更
+
+v0.4.0 对 SDK 进行了模块化重构，API 调用方式有较大变化：
+
+1. **客户端类名不变**：仍然使用 `DifyDatasetClient`
+2. **方法调用方式变更**：从扁平方法调用改为模块化调用
+3. **导入路径变更**：统一从 `dify_dataset_sdk` 导入
+
+### 客户端初始化
 
 ```python
-class SDKMonitor:
-    def __init__(self, client):
-        self.client = client
-        self.metrics = {"requests": 0, "errors": 0, "avg_response_time": 0}
+# v0.3.0 和 v0.4.0 初始化方式相同
+from dify_dataset_sdk import DifyDatasetClient
 
-    def health_check(self):
-        try:
-            start_time = time.time()
-            self.client.list_datasets(limit=1)
-            response_time = time.time() - start_time
-            return {"status": "healthy", "response_time": response_time}
-        except Exception as e:
-            return {"status": "unhealthy", "error": str(e)}
+client = DifyDatasetClient(api_key="your-api-key")
 ```
 
-## API Reference
+### API 映射表
 
-### Client Configuration
+#### 数据集操作
+
+| v0.3.0 方法 | v0.4.0 方法 |
+|------------|------------|
+| `client.create_dataset(name=...)` | `client.datasets.create(name=...)` |
+| `client.list_datasets(...)` | `client.datasets.list(...)` |
+| `client.get_dataset(dataset_id)` | `client.datasets.get(dataset_id)` |
+| `client.update_dataset(dataset_id, ...)` | `client.datasets.update(dataset_id, ...)` |
+| `client.delete_dataset(dataset_id)` | `client.datasets.delete(dataset_id)` |
+| `client.retrieve(dataset_id, query)` | `client.datasets.retrieve(dataset_id, query)` |
+
+#### 文档操作
+
+| v0.3.0 方法 | v0.4.0 方法 |
+|------------|------------|
+| `client.create_document_by_text(...)` | `client.documents.create_by_text(...)` |
+| `client.create_document_by_file(...)` | `client.documents.create_by_file(...)` |
+| `client.list_documents(dataset_id, ...)` | `client.documents.list(dataset_id, ...)` |
+| `client.get_document(dataset_id, document_id)` | `client.documents.get(dataset_id, document_id)` |
+| `client.update_document_by_text(...)` | `client.documents.update_by_text(...)` |
+| `client.update_document_by_file(...)` | `client.documents.update_by_file(...)` |
+| `client.delete_document(dataset_id, document_id)` | `client.documents.delete(dataset_id, document_id)` |
+| `client.get_document_indexing_status(...)` | `client.documents.get_indexing_status(...)` |
+| `client.batch_update_document_status(...)` | `client.documents.batch_update_status(...)` |
+
+#### 文档块操作
+
+| v0.3.0 方法 | v0.4.0 方法 |
+|------------|------------|
+| `client.create_segments(...)` | `client.segments.create(...)` |
+| `client.list_segments(...)` | `client.segments.list(...)` |
+| `client.get_segment(...)` | `client.segments.get(...)` |
+| `client.update_segment(...)` | `client.segments.update(...)` |
+| `client.delete_segment(...)` | `client.segments.delete(...)` |
+| `client.create_child_chunk(...)` | `client.segments.create_child_chunk(...)` |
+| `client.list_child_chunks(...)` | `client.segments.list_child_chunks(...)` |
+| `client.update_child_chunk(...)` | `client.segments.update_child_chunk(...)` |
+| `client.delete_child_chunk(...)` | `client.segments.delete_child_chunk(...)` |
+
+#### 标签和元数据操作
+
+| v0.3.0 方法 | v0.4.0 方法 |
+|------------|------------|
+| `client.create_knowledge_tag(...)` | `client.tags.create(...)` |
+| `client.list_knowledge_tags()` | `client.tags.list()` |
+| `client.update_knowledge_tag(...)` | `client.tags.update(...)` |
+| `client.delete_knowledge_tag(...)` | `client.tags.delete(...)` |
+| `client.bind_dataset_to_tag(...)` | `client.tags.bind_to_dataset(...)` |
+| `client.unbind_dataset_from_tag(...)` | `client.tags.unbind_from_dataset(...)` |
+| `client.get_dataset_tags(...)` | `client.tags.get_dataset_tags(...)` |
+| `client.create_metadata_field(...)` | `client.tags.create_metadata(...)` |
+| `client.list_metadata_fields(...)` | `client.tags.list_metadata(...)` |
+| `client.update_metadata_field(...)` | `client.tags.update_metadata(...)` |
+| `client.delete_metadata_field(...)` | `client.tags.delete_metadata(...)` |
+| `client.toggle_built_in_metadata_field(...)` | `client.tags.toggle_built_in_metadata(...)` |
+| `client.update_document_metadata(...)` | `client.tags.update_document_metadata(...)` |
+
+#### 模型操作
+
+| v0.3.0 方法 | v0.4.0 方法 |
+|------------|------------|
+| `client.list_embedding_models()` | `client.models.list_embedding_models()` |
+
+### 完整迁移示例
 
 ```python
-DifyDatasetClient(
-    api_key: str,           # Required: Your Dify API key
-    base_url: str,          # Optional: API base URL (default: "https://api.dify.ai")
-    timeout: float          # Optional: Request timeout in seconds (default: 30.0)
+# ============ v0.3.0 代码 ============
+from dify_dataset_sdk import DifyDatasetClient
+
+client = DifyDatasetClient(api_key="your-api-key")
+
+# 创建知识库
+dataset = client.create_dataset(name="我的知识库")
+
+# 添加文档
+doc = client.create_document_by_text(
+    dataset_id=dataset.id,
+    name="示例文档",
+    text="文档内容"
+)
+
+# 创建标签
+tag = client.create_knowledge_tag(name="重要")
+client.bind_dataset_to_tag(dataset_id=dataset.id, tag_ids=[tag.id])
+
+# 检索
+results = client.retrieve(dataset_id=dataset.id, query="搜索关键词")
+
+
+# ============ v0.4.0 代码 ============
+from dify_dataset_sdk import DifyDatasetClient
+
+client = DifyDatasetClient(api_key="your-api-key")
+
+# 创建知识库
+dataset = client.datasets.create(name="我的知识库")
+
+# 添加文档
+doc = client.documents.create_by_text(
+    dataset_id=dataset.id,
+    name="示例文档",
+    text="文档内容"
+)
+
+# 创建标签
+tag = client.tags.create(name="重要")
+client.tags.bind_to_dataset(dataset_id=dataset.id, tag_ids=[tag.id])
+
+# 检索
+results = client.datasets.retrieve(dataset_id=dataset.id, query="搜索关键词")
+```
+
+### 模型和异常类
+
+模型和异常类的导入保持不变：
+
+```python
+from dify_dataset_sdk import (
+    # 模型类
+    Dataset,
+    Document,
+    Segment,
+    RetrievalModel,
+    ProcessRule,
+    KnowledgeTag,
+    Metadata,
+    # 异常类
+    DifyError,
+    DifyAPIError,
+    DifyAuthenticationError,
+    DifyNotFoundError,
+    DifyValidationError,
+    DifyServerError,
+    DifyConnectionError,
+    DifyTimeoutError,
 )
 ```
 
-### Supported File Types
+---
 
-The SDK supports uploading the following file types:
+## 版本信息
 
-- `txt` - Plain text files
-- `md`, `markdown` - Markdown files
-- `pdf` - PDF documents
-- `html` - HTML files
-- `xlsx` - Excel spreadsheets
-- `docx` - Word documents
-- `csv` - CSV files
+- 当前版本: 0.4.0
+- Python 支持: >= 3.8.1
+- 依赖: httpx, pydantic
 
-### Rate Limits
+## 更新日志
 
-Please respect Dify's API rate limits. The SDK includes automatic error handling for rate limit responses.
+### v0.4.0
 
-## Development
-
-### Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/LeekJay/dify-dataset-sdk.git
-cd dify-dataset-sdk
-
-# Install dependencies
-pip install -e ".[dev]"
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run specific test file
-python tests/test_all_39_apis.py
-
-# Run with verbose output
-pytest -v
-```
-
-### Code Formatting
-
-```bash
-# Format code
-ruff format dify_dataset_sdk/
-
-# Check and fix issues
-ruff check --fix dify_dataset_sdk/
-
-# Type checking
-mypy dify_dataset_sdk/
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-- 📖 [Dify Documentation](https://docs.dify.ai/)
-- 🐛 [Issue Tracker](https://github.com/LeekJay/dify-dataset-sdk/issues)
-- 💬 [Community Discussions](https://github.com/dify/dify/discussions)
-- 📋 [Examples Documentation](./examples/README.md)
-
-## Changelog
+- **重构**: 采用模块化架构，按功能拆分客户端
+- **新 API**: 使用 `DifyDatasetClient` 入口访问各子模块（datasets, documents, segments, tags, models）
+- **改进**: 简化方法命名（如 `create_dataset` → `datasets.create`）
 
 ### v0.3.0
 
-- **Initial Release Features**:
-  - Full Dify Knowledge Base API support (39 endpoints)
-  - Complete CRUD operations for datasets, documents, segments, and metadata
-  - Knowledge tags management for dataset organization
-  - Advanced retrieval methods (semantic, full-text, hybrid)
-  - Comprehensive error handling with custom exceptions
-  - Type-safe models with Pydantic
-  - File upload support for multiple formats
-  - Progress monitoring and indexing status tracking
-  - Batch processing capabilities
-  - Retry mechanisms and connection resilience
-  - Rich example collection covering all use cases
-  - Production-ready monitoring and health checks
-  - Multi-language documentation (English and Chinese)
+- 初始版本，支持完整的 Dify Knowledge Base API
+
+## License
+
+MIT License
