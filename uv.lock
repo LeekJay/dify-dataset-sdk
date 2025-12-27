@@ -307,8 +307,8 @@ wheels = [
 ]
 
 [[package]]
-name = "dify-knowledge-sdk"
-version = "0.2.0"
+name = "dify-dataset-sdk"
+version = "0.4.1"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },

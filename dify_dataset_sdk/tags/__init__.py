@@ -1,20 +1,14 @@
-"""Tags and metadata module for Dify Dataset SDK."""
+"""Tags module for Dify Dataset SDK."""
 
 from .client import TagsClient
 from .models import (
     BindDatasetToTagRequest,
     CreateKnowledgeTagRequest,
-    CreateMetadataRequest,
+    DatasetTagsResponse,
     DeleteKnowledgeTagRequest,
-    DocumentMetadata,
     KnowledgeTag,
-    Metadata,
-    MetadataListResponse,
-    MetadataValue,
     UnbindDatasetFromTagRequest,
-    UpdateDocumentMetadataRequest,
     UpdateKnowledgeTagRequest,
-    UpdateMetadataRequest,
 )
 
 __all__ = [
@@ -25,11 +19,5 @@ __all__ = [
     "DeleteKnowledgeTagRequest",
     "BindDatasetToTagRequest",
     "UnbindDatasetFromTagRequest",
-    "Metadata",
-    "MetadataValue",
-    "DocumentMetadata",
-    "MetadataListResponse",
-    "CreateMetadataRequest",
-    "UpdateMetadataRequest",
-    "UpdateDocumentMetadataRequest",
+    "DatasetTagsResponse",
 ]

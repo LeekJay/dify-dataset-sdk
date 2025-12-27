@@ -186,37 +186,37 @@ client.update_segment(
 client.delete_segment(dataset_id, document_id, segment_id)
 ```
 
-### 知识标签管理
+### 知识标签管理 (client.tags)
 
 ```python
 # 创建知识标签
-tag = client.create_knowledge_tag(name="技术文档")
-dept_tag = client.create_knowledge_tag(name="工程部门")
+tag = client.tags.create(name="技术文档")
+dept_tag = client.tags.create(name="工程部门")
 
 # 将数据集绑定到标签
-client.bind_dataset_to_tag(dataset_id, [tag.id, dept_tag.id])
+client.tags.bind_to_dataset(dataset_id, [tag.id, dept_tag.id])
 
 # 列出所有知识标签
-tags = client.list_knowledge_tags()
+tags = client.tags.list()
 
 # 获取特定数据集的标签
-dataset_tags = client.get_dataset_tags(dataset_id)
+dataset_tags = client.tags.get_dataset_tags(dataset_id)
 
 # 按标签过滤数据集
 filtered_datasets = client.list_datasets(tag_ids=[tag.id])
 ```
 
-### 元数据管理
+### 元数据管理 (client.metadata)
 
 ```python
 # 创建元数据字段
-category_field = client.create_metadata_field(
+category_field = client.metadata.create(
     dataset_id=dataset_id,
     field_type="string",
     name="category"
 )
 
-priority_field = client.create_metadata_field(
+priority_field = client.metadata.create(
     dataset_id=dataset_id,
     field_type="number",
     name="priority"
@@ -241,7 +241,7 @@ metadata_operations = [
     }
 ]
 
-client.update_document_metadata(dataset_id, metadata_operations)
+client.metadata.update_document_metadata(dataset_id, metadata_operations)
 ```
 
 ### 高级检索
@@ -478,6 +478,17 @@ mypy dify_dataset_sdk/
 - 📋 [示例文档](./examples/README.md)
 
 ## 更新日志
+
+### v0.5.0
+
+- **破坏性变更**：`tags` 与 `metadata` 拆分为独立模块
+- **新增模块**：`client.metadata` 专用于元数据相关操作
+
+### v0.4.0
+
+- **重构**：采用模块化架构，按功能拆分客户端
+- **新 API**：使用 `DifyDatasetClient` 入口访问各子模块（datasets, documents, segments, tags, metadata, models）
+- **改进**：简化方法命名（如 `create_dataset` → `datasets.create`）
 
 ### v0.3.0
 

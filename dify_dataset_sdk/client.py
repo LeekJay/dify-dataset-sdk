@@ -6,6 +6,7 @@ from ._base import BaseClient
 from .datasets import DatasetsClient
 from .documents import DocumentsClient
 from .models_api import ModelsClient
+from .metadata import MetadataClient
 from .segments import SegmentsClient
 from .tags import TagsClient
 
@@ -17,7 +18,8 @@ class DifyDatasetClient:
     - datasets: Dataset management (CRUD operations, retrieval)
     - documents: Document management (text/file upload, update, delete)
     - segments: Segment management (create, update, delete, query, child chunks)
-    - tags: Knowledge tags and metadata management
+    - tags: Knowledge tag management
+    - metadata: Metadata field management
     - models: Embedding models listing
 
     Example:
@@ -43,6 +45,9 @@ class DifyDatasetClient:
         # Tag operations
         tag = client.tags.create(name="Important")
         client.tags.bind_to_dataset(dataset.id, tag_ids=[tag.id])
+
+        # Metadata operations
+        fields = client.metadata.list(dataset.id)
 
         # Model operations
         models = client.models.list_embedding_models()
@@ -70,6 +75,7 @@ class DifyDatasetClient:
         self.documents = DocumentsClient(self._base)
         self.segments = SegmentsClient(self._base)
         self.tags = TagsClient(self._base)
+        self.metadata = MetadataClient(self._base)
         self.models = ModelsClient(self._base)
 
     def close(self) -> None:

@@ -4,12 +4,13 @@
 
 ## 特性
 
-- 📚 **模块化设计**: 按功能分离的客户端模块（datasets、documents、segments、tags、models）
+- 📚 **模块化设计**: 按功能分离的客户端模块（datasets、documents、segments、tags、metadata、models）
 - 🔐 **安全认证**: 基于 API Key 的安全认证
 - 📄 **文档管理**: 支持文本和文件上传创建文档
 - 🗂️ **数据集操作**: 完整的知识库 CRUD 操作
 - ✂️ **文档块管理**: 精细化的文档块（chunks）和子块管理
-- 🏷️ **标签系统**: 知识库标签和元数据管理
+- 🏷️ **标签系统**: 知识库标签管理
+- 🧾 **元数据管理**: 自定义元数据字段与文档元数据管理
 - 🔍 **高级检索**: 支持语义搜索、全文搜索、混合搜索
 - 🔒 **类型安全**: 完整的类型提示和 Pydantic 模型
 - ⚠️ **异常处理**: 完善的错误处理机制
@@ -52,7 +53,8 @@ client = DifyDatasetClient(api_key="your-api-key")
 client.datasets    # 数据集管理
 client.documents   # 文档管理
 client.segments    # 文档块管理
-client.tags        # 标签和元数据管理
+client.tags        # 标签管理
+client.metadata    # 元数据管理
 client.models      # 嵌入模型查询
 ```
 
@@ -374,7 +376,7 @@ client.segments.delete_child_chunk(
 
 ---
 
-### 标签和元数据管理 (client.tags)
+### 标签管理 (client.tags)
 
 #### 知识库标签
 
@@ -407,40 +409,40 @@ client.tags.unbind_from_dataset(
 tags = client.tags.get_dataset_tags(dataset_id="dataset-id")
 ```
 
-#### 元数据管理
+### 元数据管理 (client.metadata)
 
 ```python
 # 创建元数据字段
-metadata = client.tags.create_metadata(
+metadata = client.metadata.create(
     dataset_id="dataset-id",
     field_type="string",  # "string" | "number" | "time"
     name="作者"
 )
 
 # 获取元数据字段列表
-response = client.tags.list_metadata(dataset_id="dataset-id")
+response = client.metadata.list(dataset_id="dataset-id")
 
 # 更新元数据字段
-metadata = client.tags.update_metadata(
+metadata = client.metadata.update(
     dataset_id="dataset-id",
     metadata_id="metadata-id",
     name="新字段名"
 )
 
 # 删除元数据字段
-client.tags.delete_metadata(
+client.metadata.delete(
     dataset_id="dataset-id",
     metadata_id="metadata-id"
 )
 
 # 启用/禁用内置元数据
-client.tags.toggle_built_in_metadata(
+client.metadata.toggle_built_in(
     dataset_id="dataset-id",
     action="enable"  # "enable" | "disable"
 )
 
 # 更新文档元数据值
-client.tags.update_document_metadata(
+client.metadata.update_document_metadata(
     dataset_id="dataset-id",
     operation_data=[
         {
@@ -574,9 +576,12 @@ dify_dataset_sdk/
 ├── segments/             # 文档块模块
 │   ├── client.py         # SegmentsClient
 │   └── models.py         # Segment/ChildChunk 相关模型
-├── tags/                 # 标签和元数据模块
+├── tags/                 # 标签模块
 │   ├── client.py         # TagsClient
-│   └── models.py         # Tag/Metadata 相关模型
+│   └── models.py         # Tag 相关模型
+├── metadata/             # 元数据模块
+│   ├── client.py         # MetadataClient
+│   └── models.py         # Metadata 相关模型
 └── models_api/           # 嵌入模型模块
     ├── client.py         # ModelsClient
     └── models.py         # EmbeddingModel 相关模型
@@ -642,7 +647,7 @@ client = DifyDatasetClient(api_key="your-api-key")
 | `client.update_child_chunk(...)` | `client.segments.update_child_chunk(...)` |
 | `client.delete_child_chunk(...)` | `client.segments.delete_child_chunk(...)` |
 
-#### 标签和元数据操作
+#### 标签操作
 
 | v0.3.0 方法 | v0.4.0 方法 |
 |------------|------------|
@@ -653,12 +658,17 @@ client = DifyDatasetClient(api_key="your-api-key")
 | `client.bind_dataset_to_tag(...)` | `client.tags.bind_to_dataset(...)` |
 | `client.unbind_dataset_from_tag(...)` | `client.tags.unbind_from_dataset(...)` |
 | `client.get_dataset_tags(...)` | `client.tags.get_dataset_tags(...)` |
-| `client.create_metadata_field(...)` | `client.tags.create_metadata(...)` |
-| `client.list_metadata_fields(...)` | `client.tags.list_metadata(...)` |
-| `client.update_metadata_field(...)` | `client.tags.update_metadata(...)` |
-| `client.delete_metadata_field(...)` | `client.tags.delete_metadata(...)` |
-| `client.toggle_built_in_metadata_field(...)` | `client.tags.toggle_built_in_metadata(...)` |
-| `client.update_document_metadata(...)` | `client.tags.update_document_metadata(...)` |
+
+#### 元数据操作
+
+| v0.3.0 方法 | v0.4.0 方法 |
+|------------|------------|
+| `client.create_metadata_field(...)` | `client.metadata.create(...)` |
+| `client.list_metadata_fields(...)` | `client.metadata.list(...)` |
+| `client.update_metadata_field(...)` | `client.metadata.update(...)` |
+| `client.delete_metadata_field(...)` | `client.metadata.delete(...)` |
+| `client.toggle_built_in_metadata_field(...)` | `client.metadata.toggle_built_in(...)` |
+| `client.update_document_metadata(...)` | `client.metadata.update_document_metadata(...)` |
 
 #### 模型操作
 
@@ -745,16 +755,21 @@ from dify_dataset_sdk import (
 
 ## 版本信息
 
-- 当前版本: 0.4.0
+- 当前版本: 0.5.0
 - Python 支持: >= 3.8.1
 - 依赖: httpx, pydantic
 
 ## 更新日志
 
+### v0.5.0
+
+- **破坏性变更**: `tags` 与 `metadata` 拆分为独立模块
+- **新增模块**: `client.metadata` 专用于元数据相关操作
+
 ### v0.4.0
 
 - **重构**: 采用模块化架构，按功能拆分客户端
-- **新 API**: 使用 `DifyDatasetClient` 入口访问各子模块（datasets, documents, segments, tags, models）
+- **新 API**: 使用 `DifyDatasetClient` 入口访问各子模块（datasets, documents, segments, tags, metadata, models）
 - **改进**: 简化方法命名（如 `create_dataset` → `datasets.create`）
 
 ### v0.3.0

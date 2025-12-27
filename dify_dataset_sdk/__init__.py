@@ -7,7 +7,8 @@ separate clients for different resource types:
 - datasets: Dataset management (create, list, update, delete, retrieve)
 - documents: Document management (text/file upload, update, delete)
 - segments: Segment and child chunk management
-- tags: Knowledge tags and metadata management
+- tags: Knowledge tag management
+- metadata: Metadata field management
 - models: Embedding model listing
 
 Example:
@@ -32,6 +33,9 @@ Example:
     # Tag operations
     tag = client.tags.create(name="Important")
     client.tags.bind_to_dataset(dataset.id, tag_ids=[tag.id])
+
+    # Metadata operations
+    fields = client.metadata.list(dataset.id)
 
     # Model operations
     models = client.models.list_embedding_models()
@@ -102,24 +106,29 @@ from .segments import (
     UpdateSegmentRequest,
 )
 
+# Metadata models
+from .metadata import (
+    CreateMetadataRequest,
+    DocumentMetadata,
+    Metadata,
+    MetadataListResponse,
+    MetadataValue,
+    UpdateDocumentMetadataRequest,
+    UpdateMetadataRequest,
+)
+
 # Tag models
 from .tags import (
     BindDatasetToTagRequest,
     CreateKnowledgeTagRequest,
-    CreateMetadataRequest,
+    DatasetTagsResponse,
     DeleteKnowledgeTagRequest,
-    DocumentMetadata,
     KnowledgeTag,
-    Metadata,
-    MetadataListResponse,
-    MetadataValue,
     UnbindDatasetFromTagRequest,
-    UpdateDocumentMetadataRequest,
     UpdateKnowledgeTagRequest,
-    UpdateMetadataRequest,
 )
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 __all__ = [
     # Main client
@@ -179,6 +188,8 @@ __all__ = [
     "DeleteKnowledgeTagRequest",
     "BindDatasetToTagRequest",
     "UnbindDatasetFromTagRequest",
+    "DatasetTagsResponse",
+    # Metadata models
     "Metadata",
     "MetadataValue",
     "DocumentMetadata",
